@@ -4,7 +4,7 @@ namespace Preprocess {
   void Strip_Whitespace(string filename) {
     double initial_time = clock();
     ifstream ifs(filename);
-    ofstream ofs(Utility::path_prefix + "nows.txt");
+    ofstream ofs(Utility::Path("nows"));
     string s;
     while (getline(ifs, s)) {
       while (!s.empty() && isspace(s.back()))
@@ -25,7 +25,7 @@ namespace Preprocess {
   void Remove_Trash(string filename) {
     double initial_time = clock();
     ifstream ifs(filename);
-    ofstream ofs(Utility::path_prefix + "notrash.txt");
+    ofstream ofs(Utility::Path("notrash"));
     string s;
     vector<string> cur_page;
     bool skip = 1;
@@ -62,7 +62,7 @@ namespace Preprocess {
   void Head(string filename) {
     double initial_time = clock();
     ifstream ifs(filename);
-    ofstream ofs(Utility::path_prefix + "head.txt");
+    ofstream ofs(Utility::Path("head"));
     ifs >> noskipws;
     ofs << noskipws;
     char c;
@@ -75,11 +75,25 @@ namespace Preprocess {
     Utility::Print_Elapsed_Time(initial_time);
   }
 
+  void Head20k(string filename) {
+    double initial_time = clock();
+    ifstream ifs(filename);
+    ofstream ofs(Utility::Path("20k"));
+    string s;
+    for (int i = 0; i < 20000; i++) {
+      getline(ifs, s);
+      ofs << s << "\n";
+    }
+    ifs.close();
+    ofs.close();
+    Utility::Print_Elapsed_Time(initial_time);
+  }
+
   void To_Pairs(string filename) {
     double initial_time = clock();
     ifstream ifs(filename);
-    ofstream ofs(Utility::path_prefix + "articles.txt");
-    ofstream ofst(Utility::path_prefix + "titles.txt");
+    ofstream ofs(Utility::Path("articles"));
+    ofstream ofst(Utility::Path("titles"));
     string s;
     while (getline(ifs, s)) {
       if (s == "<page>") {
@@ -100,7 +114,7 @@ namespace Preprocess {
   void Lower_ASCII(string filename) {
     double initial_time = clock();
     ifstream ifs(filename);
-    ofstream ofs(Utility::path_prefix + "lower.txt");
+    ofstream ofs(Utility::Path("lower"));
     ifs >> noskipws;
     ofs << noskipws;
     char c;
@@ -122,15 +136,15 @@ namespace Preprocess {
     Utility::Print_Elapsed_Time(initial_time);
   }
 
-  void Alnum(string filename) {
+  void Alpha(string filename) {
     double initial_time = clock();
     ifstream ifs(filename);
-    ofstream ofs(Utility::path_prefix + "alnum.txt");
+    ofstream ofs(Utility::Path("alpha"));
     ifs >> noskipws;
     ofs << noskipws;
     char c, last = 0;
     while (ifs >> c) {
-      if (isalnum(c) || c == '\n') {
+      if (isalpha(c) || c == '\n') {
         ofs << c;
         last = c;
       }
@@ -147,7 +161,7 @@ namespace Preprocess {
   void Delete_Common(string filename) {
     double initial_time = clock();
     ifstream ifs(filename);
-    ofstream ofs(Utility::path_prefix + "nocommon.txt");
+    ofstream ofs(Utility::Path("nocommon"));
     string s;
     while (getline(ifs, s)) {
       stringstream ss(s);
@@ -164,7 +178,7 @@ namespace Preprocess {
   void Delete_Long(string filename) {
     double initial_time = clock();
     ifstream ifs(filename);
-    ofstream ofs(Utility::path_prefix + "nolong.txt");
+    ofstream ofs(Utility::Path("nolong"));
     string s;
     while (getline(ifs, s)) {
       stringstream ss(s);
@@ -178,31 +192,52 @@ namespace Preprocess {
     Utility::Print_Elapsed_Time(initial_time);
   }
 
+  void List_Terms(string filename) {
+    double initial_time = clock();
+
+    ifstream ifs(filename);
+    string s;
+    unordered_map<string, int> unique_terms;
+    while (getline(ifs, s)) {
+      stringstream ss(s);
+      while (getline(ss, s, ' '))
+        unique_terms[s]++;
+    }
+    ifs.close();
+
+    ofstream ofs(Utility::Path("terms"));
+    for (auto& term : unique_terms)
+      ofs << term.first << " " << term.second << "\n";
+    ofs.close();
+
+    Utility::Print_Elapsed_Time(initial_time);
+  }
+
   void Do_Everything(string filename) {
     cout << "Stripping whitespace from raw text.\n";
     Strip_Whitespace(filename);
     cout << "Removing all tags except page and title\n";
     cout << "  and all entries with invalid titles.\n";
-    Remove_Trash(Utility::path_prefix + "nows.txt");
-    remove((Utility::path_prefix + "nows.txt").c_str());
+    Remove_Trash(Utility::Path("nows"));
+    remove((Utility::Path("nows")).c_str());
     cout << "Writing titles to one file, articles to another.\n";
-    To_Pairs(Utility::path_prefix + "notrash.txt");
-    remove((Utility::path_prefix + "notrash.txt").c_str());
+    To_Pairs(Utility::Path("notrash"));
+    remove((Utility::Path("notrash")).c_str());
     cout << "Making articles lowercase and ASCII.\n";
-    Lower_ASCII(Utility::path_prefix + "articles.txt");
-    remove((Utility::path_prefix + "articles.txt").c_str());
-    cout << "Making articles alphanumeric.\n";
-    Alnum(Utility::path_prefix + "lower.txt");
-    remove((Utility::path_prefix + "lower.txt").c_str());
+    Lower_ASCII(Utility::Path("articles"));
+    remove((Utility::Path("articles")).c_str());
+    cout << "Making articles letter-only.\n";
+    Alpha(Utility::Path("lower"));
+    remove((Utility::Path("lower")).c_str());
     cout << "Removing common words from articles.\n";
-    Delete_Common(Utility::path_prefix + "alnum.txt");
-    remove((Utility::path_prefix + "alnum.txt").c_str());
+    Delete_Common(Utility::Path("alpha"));
+    remove((Utility::Path("alpha")).c_str());
     cout << "Removing too long and too short words from articles.\n";
-    Delete_Long(Utility::path_prefix + "nocommon.txt");
-    remove((Utility::path_prefix + "nocommon.txt").c_str());
+    Delete_Long(Utility::Path("nocommon"));
+    remove((Utility::Path("nocommon")).c_str());
     rename(
-      (Utility::path_prefix + "nolong.txt").c_str(), 
-      (Utility::path_prefix + "articles.txt").c_str()
+      (Utility::Path("nolong")).c_str(),
+      (Utility::Path("articles")).c_str()
     );
   }
 }

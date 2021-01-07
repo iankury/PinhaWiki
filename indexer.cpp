@@ -1,31 +1,38 @@
 #include "pinhawiki.h"
 
+struct pinha_hash {
+  static uint64_t splitmix64(uint64_t x) {
+    x += 0x9e3779b97f4a7c15;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+    return x ^ (x >> 31);
+  }
+
+  size_t operator()(uint64_t x) const {
+    static const uint64_t FIXED_RANDOM =
+      chrono::steady_clock::now().time_since_epoch().count();
+    return splitmix64(x + FIXED_RANDOM);
+  }
+};
+
+struct hash_pair {
+  size_t operator()(const pair<int, int>& p) const {
+    auto hash1 = pinha_hash{}(p.first);
+    auto hash2 = pinha_hash{}(p.second);
+    return hash1 ^ hash2;
+  }
+};
+
 namespace Indexer {
-  float N = 0; // Number of documents in the collection
-
-  struct TermInfo {
-    int freq; // Total term frequency in collection
-    float IDF() const { return log2(N / freq); } // Inverse Document Frequency
-    unordered_map<int, int> TF; // Document [first] has frequency [second] for this term
-    unordered_map<int, float> w; // Document [first] has weight [second] for this term
-    TermInfo() : freq(0) {}
-    void Compute_Weights() {
-      const float idf = IDF();
-      if (idf > 0)
-        for (auto& p : TF) 
-          w[p.first] = (log2((float)p.second) + 1) * idf;
-      TF.clear(); // Get rid of TF after computing w in order to save memory
-    }
-    float Weight_In_Query(int frequency) const {
-      if (freq == 0)
-        return 0;
-      return (log2((float)frequency) + 1) * IDF();
-    }
-  };
-
-  unordered_map<string, TermInfo> index; // Maps each term to its data (across documents)
+  int N = 0; // Number of documents in the collection
+  const int M = 3300000; // Number of terms (upper bound)
 
   vector<string> titles; // Maps each document number to its title
+  unordered_map<string, int> encode; // Assigns an id to each term (0, 1, 2...)
+  int TF[M]; // Total term frequency in collection (for local TF, see freq)
+  float IDF[M]; // Inverse document frequency
+
+  unordered_map<pair<int, int>, float, hash_pair> w; // For term i, document j has weight w[{i,j}]
 
   void Load_Titles(string titles_path) {
     double initial_time = clock();
@@ -41,31 +48,102 @@ namespace Indexer {
     Utility::Print_Elapsed_Time(initial_time);
   }
 
+  void Load_Terms() {
+    double initial_time = clock();
+
+    ifstream ifs(Utility::Path("terms"));
+    string s, fr;
+    int id = -1;
+    while (ifs >> s >> fr) {
+      encode[s] = ++id;
+      TF[id] = stoi(fr);
+    }
+    ifs.close();
+
+    Utility::Print_Elapsed_Time(initial_time);
+  }
+
+  void Load_Weights() {
+    double initial_time = clock();
+
+    ifstream ifs(Utility::Path("index"));
+    int i, j;
+    float wx;
+    while (ifs >> i >> j >> wx)
+      w[{ i, j }] = wx;
+
+    ifs.close();
+
+    Utility::Print_Elapsed_Time(initial_time);
+  }
+
+  void Load_Engine() {
+    cout << "Loading titles.txt\n";
+    Load_Titles(Utility::Path("titles"));
+    cout << "Loading terms.txt\n";
+    Load_Terms();
+    cout << "Loading index.txt\n";
+    Load_Weights();
+  }
+
   void Build_Index(string articles_path) {
+    Load_Terms();
+
+    for (int i = 0; i < encode.size(); i++)
+      IDF[i] = log2((float)N / TF[i]);
+
+    cout << "Loaded " << encode.size() << " terms.\n";
+
     double initial_time = clock();
 
     ifstream ifs(articles_path);
     string s;
-    int j = 0; // Document number
-    while (getline(ifs, s)) {
+
+    for (int j = 0; getline(ifs, s); j++) { // For each document j
       stringstream ss(s);
-      while (ss >> s) {
-        index[s].freq++;
-        index[s].TF[j]++;
+      unordered_map<string, int> freq; // Term i occurs freq[i] times in this document
+      vector<pair<float, int>> aux;
+      int i;
+      float weight;
+
+      while (ss >> s)
+        freq[s]++;
+
+      for (auto& p : freq) {
+        i = encode[p.first];
+        if (IDF[i] > 0) {
+          weight = (log2((float)p.second) + 1) * IDF[i];
+          if (weight > 0.01)
+            aux.push_back({ weight, i });
+        }
       }
-      j++;
+
+      if (aux.size() < 201) {
+        for (auto& p : aux)
+          w[{ p.second, j }] = p.first;
+      }
+      else {
+        sort(rbegin(aux), rend(aux));
+        const int limit = max(200, (int)aux.size() / 5); // Top 20% heaviest, at least 200
+        for (int k = 0; k < limit; k++) // Consider only the heaviest terms for document j
+          w[{ aux[k].second, j }] = aux[k].first;
+      }
     }
     ifs.close();
 
-    for (auto& entry : index)
-      entry.second.Compute_Weights();
+    ofstream ofs(Utility::Path("index"));
+    for (auto& x : w) {
+      ofs << x.first.first << " " << x.first.second << " ";
+      ofs << fixed << setprecision(4) << x.second << "\n";
+    }
+    ofs.close();
 
     Utility::Print_Elapsed_Time(initial_time);
   }
 
   void Query(string query) {
     double initial_time = clock();
-
+    
     stringstream ss(query);
     unordered_map<string, int> TFQ; // Term frequency in the query
 
@@ -75,21 +153,21 @@ namespace Indexer {
 
     vector<float> score(N); // Similarity between each document and the query
 
-    float numerator, denominator;
+    float numerator = 0, denominator = 0;
     float denominator_left_sum, denominator_right_sum;
     float wij, wiq;
 
     for (int j = 0; j < N; j++) {
       numerator = denominator_left_sum = denominator_right_sum = 0;
       for (auto& p : TFQ) {
-        TermInfo& term_info = index[p.first];
-        wij = term_info.w[j];
-        wiq = term_info.Weight_In_Query(p.second);
+        int i = encode[p.first];
+        wij = w[{ i, j }];
+        wiq = (log2((float)p.second) + 1) * IDF[i];
         numerator += wij * wiq;
         denominator_left_sum += wij * wij;
         denominator_right_sum += wiq * wiq;
       }
-      if (numerator > 0) {
+      if (numerator > 0 && denominator > 0) {
         denominator = sqrt(denominator_left_sum) * sqrt(denominator_right_sum);
         score[j] = numerator / denominator;
       }
@@ -104,14 +182,13 @@ namespace Indexer {
       return score[p] > score[q];
     });
 
-    // Get only top results
-    const int threshold = min(int(N + .5), 20);
+    const int threshold = min(N, 50); // Get only top results
     for (int i = 0; i < threshold; i++) {
       const int j = sorted[i];
       cout << "The score of document " << titles[j] << " is ";
       cout << fixed << setprecision(4) << score[j] << "\n";
     }
-
+    
     Utility::Print_Elapsed_Time(initial_time);
   }
 }

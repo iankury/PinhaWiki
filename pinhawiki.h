@@ -3,6 +3,7 @@ using namespace std;
 
 namespace Utility {
   extern const string path_prefix;
+  string Path(string filename);
   extern unordered_map<int, int> compress_letter;
   extern vector<string> invalid_substrings;
   extern unordered_set<string> common_terms;
@@ -14,19 +15,25 @@ namespace Preprocess {
   void Strip_Whitespace(string filename);
   void Remove_Trash(string filename);
   void Head(string filename);
+  void Head20k(string filename);
   void To_Pairs(string filename);
   void Lower_ASCII(string filename);
-  void Alnum(string filename);
+  void Alpha(string filename);
   void Delete_Common(string filename);
   void Delete_Long(string filename); 
+  void List_Terms(string filename);
   void Do_Everything(string filename);
 }
 
 namespace Indexer {
-  extern float N;
+  extern int N;
+  extern const int M;
   struct Occurrence;
   struct TermInfo;
   void Load_Titles(string titles_path);
+  void Load_Terms();
+  void Load_Weights();
+  void Load_Engine();
   void Build_Index(string articles_path);
   void Query(string query);
 }

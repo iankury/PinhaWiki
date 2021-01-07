@@ -3,6 +3,10 @@
 namespace Utility {
   const string path_prefix = "C:\\Users\\Administrator\\repos\\PinhaWikiC\\";
 
+  string Path(string filename) {
+    return path_prefix + filename + ".txt";
+  }
+
   unordered_map<int, int> compress_letter{
     { 128, 65 }, { 136, 69 }, { 140, 73 }, { 146, 79 }, { 153, 85 }, { 127, 65 },
     { 130, 65 }, { 148, 79 }, { 129, 65 }, { 137, 69 }, { 147, 79 }, { 134, 67 },
@@ -46,7 +50,7 @@ namespace Utility {
 
   void Print_Elapsed_Time(double initial_time) {
     double seconds = (double(clock()) - initial_time) / 1000.;
-    double minutes = (int)seconds / 60;
+    int minutes = (int)seconds / 60;
     seconds -= minutes * 60.;
     cout << "Time elapsed: " << minutes << " minutes, ";
     cout << fixed << setprecision(3) << seconds << " seconds.\n";
