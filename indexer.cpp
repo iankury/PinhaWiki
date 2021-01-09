@@ -60,6 +60,9 @@ namespace Indexer {
     }
     ifs.close();
 
+    for (int i = 0; i < encode.size(); i++)
+      IDF[i] = log2((float)N / (float)TF[i]);
+
     Utility::Print_Elapsed_Time(initial_time);
   }
 
@@ -89,9 +92,6 @@ namespace Indexer {
   void Build_Index(string articles_path) {
     Load_Terms();
 
-    for (int i = 0; i < encode.size(); i++)
-      IDF[i] = log2((float)N / TF[i]);
-
     cout << "Loaded " << encode.size() << " terms.\n";
 
     double initial_time = clock();
@@ -112,7 +112,7 @@ namespace Indexer {
       for (auto& p : freq) {
         i = encode[p.first];
         if (IDF[i] > 0) {
-          weight = (log2((float)p.second) + 1) * IDF[i];
+          weight = log2(1.f + p.second) * IDF[i];
           if (weight > 0.01)
             aux.push_back({ weight, i });
         }
@@ -124,7 +124,7 @@ namespace Indexer {
       }
       else {
         sort(rbegin(aux), rend(aux));
-        const int limit = max(200, (int)aux.size() / 5); // Top 20% heaviest, at least 200
+        const int limit = max(100, (int)aux.size() / 4); // Top 25% heaviest, at least 100
         for (int k = 0; k < limit; k++) // Consider only the heaviest terms for document j
           w[{ aux[k].second, j }] = aux[k].first;
       }
@@ -157,23 +157,30 @@ namespace Indexer {
     float denominator_left_sum, denominator_right_sum;
     float wij, wiq;
 
+    int i;
+
     for (int j = 0; j < N; j++) {
       numerator = denominator_left_sum = denominator_right_sum = 0;
       for (auto& p : TFQ) {
-        int i = encode[p.first];
-        wij = w[{ i, j }];
-        wiq = (log2((float)p.second) + 1) * IDF[i];
+        if (!encode.count(p.first))
+          continue;
+
+        i = encode[p.first];
+
+        wij = w.count({ i, j }) ? w[{ i, j }] : 0;
+
+        wiq = log2(1.f + p.second) * IDF[i];
+
         numerator += wij * wiq;
         denominator_left_sum += wij * wij;
         denominator_right_sum += wiq * wiq;
       }
-      if (numerator > 0 && denominator > 0) {
+      if (numerator > 0) {
         denominator = sqrt(denominator_left_sum) * sqrt(denominator_right_sum);
         score[j] = numerator / denominator;
       }
-      else {
+      else 
         score[j] = 0;
-      }
     }
 
     vector<int> sorted(N);
@@ -185,7 +192,9 @@ namespace Indexer {
     const int threshold = min(N, 50); // Get only top results
     for (int i = 0; i < threshold; i++) {
       const int j = sorted[i];
-      cout << "The score of document " << titles[j] << " is ";
+      if (score[j] < 0.01)
+        break;
+      cout << titles[j] << " ";
       cout << fixed << setprecision(4) << score[j] << "\n";
     }
     
