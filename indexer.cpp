@@ -39,7 +39,7 @@ namespace Indexer {
 
     ifstream ifs(titles_path);
     string s;
-    while (getline(ifs, s))
+    while (getline(ifs, s)) 
       titles.push_back(s);
     ifs.close();
 
@@ -100,11 +100,17 @@ namespace Indexer {
     string s;
 
     for (int j = 0; getline(ifs, s); j++) { // For each document j
-      stringstream ss(s);
+      stringstream ss(s), sst(titles[j]);
       unordered_map<string, int> freq; // Term i occurs freq[i] times in this document
+      unordered_map<string, int> title_freq; // Term i occurs freq[i] times in this document's title
       vector<pair<float, int>> aux;
       int i;
-      float weight;
+      float weight, text_weight, title_weight;
+
+      while (sst >> s) {
+        title_freq[s]++;
+        freq[s] = 0;
+      }
 
       while (ss >> s)
         freq[s]++;
@@ -112,8 +118,10 @@ namespace Indexer {
       for (auto& p : freq) {
         i = encode[p.first];
         if (IDF[i] > 0) {
-          weight = log2(1.f + p.second) * IDF[i];
-          if (weight > 0.01)
+          text_weight = log2(1.f + p.second) * IDF[i];
+          title_weight = title_freq.count(p.first) ? log2(1.f + title_freq[p.first]) * IDF[i] : 0;
+          weight = .6f * title_weight + .4f * text_weight;
+          if (weight > 0.03)
             aux.push_back({ weight, i });
         }
       }
@@ -151,13 +159,14 @@ namespace Indexer {
     while (getline(ss, term, ' ')) 
       TFQ[term]++;
 
-    vector<float> score(N); // Similarity between each document and the query
-
     float numerator = 0, denominator = 0;
     float denominator_left_sum, denominator_right_sum;
     float wij, wiq;
 
     int i;
+
+    vector<float> score(N); // Similarity between each document and the query
+    vector<int> ranking;
 
     for (int j = 0; j < N; j++) {
       numerator = denominator_left_sum = denominator_right_sum = 0;
@@ -177,25 +186,25 @@ namespace Indexer {
       }
       if (numerator > 0) {
         denominator = sqrt(denominator_left_sum) * sqrt(denominator_right_sum);
-        score[j] = numerator / denominator;
+        if (titles[j] == query)
+          score[j] = 9.99f;
+        else
+          score[j] = numerator / denominator;
+        if (score[j] > 0.01)
+          ranking.push_back(j);
       }
-      else 
-        score[j] = 0;
     }
 
-    vector<int> sorted(N);
-    iota(begin(sorted), end(sorted), 0);
-    sort(begin(sorted), end(sorted), [&](int p, int q) {
-      return score[p] > score[q];
-    });
+    sort(begin(ranking), end(ranking), [&](int px, int qx) {
+      return score[px] > score[qx];
+      });
 
-    const int threshold = min(N, 50); // Get only top results
-    for (int i = 0; i < threshold; i++) {
-      const int j = sorted[i];
-      if (score[j] < 0.01)
-        break;
-      cout << titles[j] << " ";
-      cout << fixed << setprecision(4) << score[j] << "\n";
+    const int threshold = min((int)ranking.size(), 50); // Get only top results
+    for (i = 0; i < threshold; i++) {
+      const int j = ranking[i];
+      cout << right << setw(2) << (i + 1) << ") <";
+      cout << fixed << setprecision(2) << score[j] << "> ";
+      cout << titles[j] << "\n";
     }
     
     Utility::Print_Elapsed_Time(initial_time);
