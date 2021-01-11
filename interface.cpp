@@ -1,70 +1,77 @@
 #include "pinhawiki.h"
 
-namespace Interface {
-  void Print_Help() {
+namespace command_line_interface {
+  void PrintHelp() {
     cout << "Displaying help. Available commands:\n";
     cout << "help -- displays available commands\n";
     cout << "exit -- closes the program\n";
     cout << "head -- writes first million chars\n";
     cout << "head20k -- writes first 20k lines\n";
     cout << "nows -- strips leading/trailing whitespace\n";
-    cout << "notrash -- removes entries with trash titles, leaves only title & page\n";
-    cout << "pairs -- writes titles to one file, articles to another\n";
-    cout << "lower -- makes each char lowercase and ASCII\n";
+    cout << "notrash -- removes entries with trash titles, leaves only\n";
+    cout << "  page tags, and inside them only title tags and text (content)\n";
+    cout << "split -- writes titles to one file, articles to another\n";
+    cout << "lower_ascii -- makes each char lowercase and ASCII,\n";
+    cout << "  but will keep non-Portuguese non-ASCII chars\n";
     cout << "alpha -- prints only letters\n";
     cout << "nocommon -- deletes high-frequency words\n";
-    cout << "nolong -- deletes words with 1 letter or more than 14\n";
-    cout << "terms -- writes all unique terms\n";
-    cout << "load -- loads document titles\n";
-    cout << "index -- builds an index (requires load and terms.txt)\n";
-    cout << "engine -- loads whole engine (titles, terms, index)\n";
+    cout << "nolong -- deletes single-letter words and words of 15+ letters\n";
+    cout << "preprocess -- does all preprocessing sequentially\n";
+    cout << "write_terms -- writes all unique terms\n";
+    cout << "  along with their total frequency in the collection\n";
+    cout << "load_titles -- loads document titles\n";
+    cout << "build_index -- builds an index (requires load and terms.txt)\n";
+    cout << "save_index -- saves the weights in index.txt as i j w lines\n";
+    cout << "load_engine -- loads whole engine (titles, terms, index)\n";
     cout << "query -- queries the index (requires index)\n";
   }
 
-  void Handle_Query() {
+  void HandleQuery() {
     string s;
     getline(cin, s);
 
     // TO DO: preprocess query
 
-    Indexer::Query(s);
+    indexer::Query(s);
   }
 
-  void Handle_Command(string command, string filename) {
+  void HandleCommand(string command, string filename) {
     if (command == "help")
-      Print_Help();
+      PrintHelp();
     else if (command == "exit")
       exit(0);
     else if (command == "nows")
-      Preprocess::Strip_Whitespace(filename);
+      preprocess::StripWhitespace(filename);
     else if (command == "notrash")
-      Preprocess::Remove_Trash(filename);
+      preprocess::RemoveTrash(filename);
     else if (command == "head")
-      Preprocess::Head(filename);
+      preprocess::Head(filename);
     else if (command == "head20k")
-      Preprocess::Head20k(filename);
-    else if (command == "pairs")
-      Preprocess::To_Pairs(filename);
-    else if (command == "lower")
-      Preprocess::Lower_ASCII(filename);
+      preprocess::Head20k(filename);
+    else if (command == "split")
+      preprocess::SplitTitlesAndArticles(filename);
+    else if (command == "lower_ascii")
+      preprocess::LowerAscii(filename);
     else if (command == "alpha")
-      Preprocess::Alpha(filename);
+      preprocess::Alpha(filename);
     else if (command == "nocommon")
-      Preprocess::Delete_Common(filename);
+      preprocess::DeleteCommon(filename);
     else if (command == "nolong")
-      Preprocess::Delete_Long(filename);
-    else if (command == "terms")
-      Preprocess::List_Terms(filename);
-    else if (command == "everything")
-      Preprocess::Do_Everything(filename);
-    else if (command == "load")
-      Indexer::Load_Titles(filename);
-    else if (command == "index")
-      Indexer::Build_Index(filename);
-    else if (command == "engine")
-      Indexer::Load_Engine();
+      preprocess::DeleteLong(filename);
+    else if (command == "write_terms")
+      indexer::WriteTerms(filename);
+    else if (command == "preprocess")
+      preprocess::FullPreprocessing(filename);
+    else if (command == "load_titles")
+      indexer::LoadTitles(filename);
+    else if (command == "build_index")
+      indexer::BuildIndex(filename);
+    else if (command == "save_index")
+      indexer::SaveIndex();
+    else if (command == "load_engine")
+      indexer::LoadEngine();
     else if (command == "query")
-      Handle_Query();
+      HandleQuery();
     else {
       cout << command << " is not a valid command. ";
       cout << "Type help for a list of commands.\n";
@@ -82,7 +89,7 @@ namespace Interface {
       getline(ss, command, ' ');
       getline(ss, filename);
 
-      Handle_Command(command, Utility::Path(filename));
+      HandleCommand(command, utility::Path(filename));
     }
   }
 }

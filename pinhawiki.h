@@ -1,46 +1,43 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-namespace Utility {
-  extern const string path_prefix;
-  string Path(string filename);
-  extern unordered_map<int, int> compress_letter;
+namespace utility {
+  extern const string kPathPrefix;
+  string Path(const string& filename);
+  extern unordered_map<int, int> compressed_chars;
   extern vector<string> invalid_substrings;
   extern unordered_set<string> common_terms;
-  void Print_Elapsed_Time(double initial_time);
-  bool Valid_Title(const string& title);
+  void PrintElapsedTime(const double& initial_time);
+  bool ValidTitle(const string& title);
 }
 
-namespace Preprocess {
-  void Strip_Whitespace(string filename);
-  void Remove_Trash(string filename);
-  void Head(string filename);
-  void Head20k(string filename);
-  void To_Pairs(string filename);
-  void Lower_ASCII(string filename);
-  void Alpha(string filename);
-  void Delete_Common(string filename);
-  void Delete_Long(string filename); 
-  void List_Terms(string filename);
-  void Do_Everything(string filename);
+namespace preprocess {
+  void StripWhitespace(const string& filename);
+  void RemoveTrash(const string& filename);
+  void Head(const string& filename);
+  void Head20k(const string& filename);
+  void SplitTitlesAndArticles(const string& filename);
+  void LowerAscii(const string& filename);
+  void Alpha(const string& filename);
+  void DeleteCommon(const string& filename);
+  void DeleteLong(const string& filename);
+  void FullPreprocessing(const string& filename);
 }
 
-namespace Indexer {
-  extern int N;
-  extern const int M;
-  struct Occurrence;
-  struct TermInfo;
-  void Load_Titles(string titles_path);
-  void Load_Terms();
-  void Load_Weights();
-  void Load_Engine();
-  void Build_Index(string articles_path);
-  void Query(string query);
+namespace indexer {
+  void LoadTitles(const string& titles_path);
+  void WriteTerms(const string& articles_path);
+  void LoadTerms();
+  void LoadWeights();
+  void LoadEngine();
+  void SaveIndex();
+  void BuildIndex(const string& articles_path);
+  void Query(const string& query);
 }
 
-namespace Interface {
-  void Print_Help();
-  void Handle_Query();
-  void Handle_Command(string command, string filename);
+namespace command_line_interface {
+  void PrintHelp();
+  void HandleQuery();
+  void HandleCommand(string command, string filename);
   void Run();
 }

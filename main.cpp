@@ -2,7 +2,7 @@
 
 int main() {
   
-  Interface::Run();
+  command_line_interface::Run();
 
   return 0;
 }

@@ -1,40 +1,50 @@
 #include "pinhawiki.h"
 
-struct pinha_hash {
-  static uint64_t splitmix64(uint64_t x) {
-    x += 0x9e3779b97f4a7c15;
-    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
-    x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
-    return x ^ (x >> 31);
-  }
+/*
+Source of the main Information Retrieval ideas applied and
+theoretical groundwork for the model chosen (Vector Space Model),
+particularly the formulas for computing TF-IDF weights
+and measuring the similarity between queries and documents:
 
-  size_t operator()(uint64_t x) const {
-    static const uint64_t FIXED_RANDOM =
-      chrono::steady_clock::now().time_since_epoch().count();
-    return splitmix64(x + FIXED_RANDOM);
-  }
-};
+BAEZA-YATES, Ricardo; RIBEIRO-NETO, Berthier. 
+Recuperação de Informação: Conceitos e tecnologia das máquinas de busca. 
+2. ed. Porto Alegre: Bookman, 2013. 590 p. ISBN 978-85-8260-049-8. E-book.
+*/
 
-struct hash_pair {
-  size_t operator()(const pair<int, int>& p) const {
-    auto hash1 = pinha_hash{}(p.first);
-    auto hash2 = pinha_hash{}(p.second);
-    return hash1 ^ hash2;
-  }
-};
+namespace indexer {
+  struct RandomizedHash {
+    // Hash source: Written in 2015 by Sebastiano Vigna: xorshift.di.unimi.it/splitmix64.c
+    static uint64_t splitmix64(uint64_t x) {
+      x += 0x9e3779b97f4a7c15;
+      x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+      x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+      return x ^ (x >> 31);
+    }
 
-namespace Indexer {
-  int N = 0; // Number of documents in the collection
-  const int M = 3300000; // Number of terms (upper bound)
+    size_t operator()(uint64_t x) const {
+      static const uint64_t FIXED_RANDOM =
+        chrono::steady_clock::now().time_since_epoch().count();
+      return splitmix64(x + FIXED_RANDOM);
+    }
+  };
+
+  struct PairHash { // Makes it possible to use a single unordered_map for weights w[{i,j}]
+    size_t operator()(const pair<int, int>& p) const {
+      return RandomizedHash{}(p.first) ^ RandomizedHash {}(p.second);
+    }
+  };
+
+  int N = 0; // Number of documents in the collection (see LoadTitles)
+  const int M = 3300000; // Number of terms in the collection (upper bound)
 
   vector<string> titles; // Maps each document number to its title
   unordered_map<string, int> encode; // Assigns an id to each term (0, 1, 2...)
   int TF[M]; // Total term frequency in collection (for local TF, see freq)
   float IDF[M]; // Inverse document frequency
 
-  unordered_map<pair<int, int>, float, hash_pair> w; // For term i, document j has weight w[{i,j}]
+  unordered_map<pair<int, int>, float, PairHash> w; // For term i, document j has weight w[{i,j}]
 
-  void Load_Titles(string titles_path) {
+  void LoadTitles(const string& titles_path) {
     double initial_time = clock();
 
     ifstream ifs(titles_path);
@@ -45,13 +55,34 @@ namespace Indexer {
 
     N = titles.size();
 
-    Utility::Print_Elapsed_Time(initial_time);
+    utility::PrintElapsedTime(initial_time);
   }
 
-  void Load_Terms() {
+  void WriteTerms(const string& articles_path) {
     double initial_time = clock();
 
-    ifstream ifs(Utility::Path("terms"));
+    ifstream ifs(articles_path);
+    string s;
+    unordered_map<string, int> unique_terms;
+    while (getline(ifs, s)) {
+      stringstream ss(s);
+      while (getline(ss, s, ' '))
+        unique_terms[s]++;
+    }
+    ifs.close();
+
+    ofstream ofs(utility::Path("terms"));
+    for (auto& term : unique_terms)
+      ofs << term.first << " " << term.second << "\n";
+    ofs.close();
+
+    utility::PrintElapsedTime(initial_time);
+  }
+
+  void LoadTerms() {
+    double initial_time = clock();
+
+    ifstream ifs(utility::Path("terms"));
     string s, fr;
     int id = -1;
     while (ifs >> s >> fr) {
@@ -63,13 +94,13 @@ namespace Indexer {
     for (int i = 0; i < encode.size(); i++)
       IDF[i] = log2((float)N / (float)TF[i]);
 
-    Utility::Print_Elapsed_Time(initial_time);
+    utility::PrintElapsedTime(initial_time);
   }
 
-  void Load_Weights() {
+  void LoadIndex() {
     double initial_time = clock();
 
-    ifstream ifs(Utility::Path("index"));
+    ifstream ifs(utility::Path("index"));
     int i, j;
     float wx;
     while (ifs >> i >> j >> wx)
@@ -77,20 +108,33 @@ namespace Indexer {
 
     ifs.close();
 
-    Utility::Print_Elapsed_Time(initial_time);
+    utility::PrintElapsedTime(initial_time);
   }
 
-  void Load_Engine() {
+  void LoadEngine() {
     cout << "Loading titles.txt\n";
-    Load_Titles(Utility::Path("titles"));
+    LoadTitles(utility::Path("titles"));
     cout << "Loading terms.txt\n";
-    Load_Terms();
+    LoadTerms();
     cout << "Loading index.txt\n";
-    Load_Weights();
+    LoadIndex();
   }
 
-  void Build_Index(string articles_path) {
-    Load_Terms();
+  void SaveIndex() {
+    double initial_time = clock();
+
+    ofstream ofs(utility::Path("index"));
+    for (auto& x : w) {
+      ofs << x.first.first << " " << x.first.second << " ";
+      ofs << fixed << setprecision(4) << x.second << "\n";
+    }
+    ofs.close();
+
+    utility::PrintElapsedTime(initial_time);
+  }
+
+  void BuildIndex(const string& articles_path) {
+    LoadTerms();
 
     cout << "Loaded " << encode.size() << " terms.\n";
 
@@ -139,17 +183,10 @@ namespace Indexer {
     }
     ifs.close();
 
-    ofstream ofs(Utility::Path("index"));
-    for (auto& x : w) {
-      ofs << x.first.first << " " << x.first.second << " ";
-      ofs << fixed << setprecision(4) << x.second << "\n";
-    }
-    ofs.close();
-
-    Utility::Print_Elapsed_Time(initial_time);
+    utility::PrintElapsedTime(initial_time);
   }
 
-  void Query(string query) {
+  void Query(const string& query) {
     double initial_time = clock();
     
     stringstream ss(query);
@@ -207,6 +244,6 @@ namespace Indexer {
       cout << titles[j] << "\n";
     }
     
-    Utility::Print_Elapsed_Time(initial_time);
+    utility::PrintElapsedTime(initial_time);
   }
 }
