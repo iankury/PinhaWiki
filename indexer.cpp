@@ -186,7 +186,7 @@ namespace indexer {
     utility::PrintElapsedTime(initial_time);
   }
 
-  void Query(const string& query) {
+  string Query(const string& query) {
     double initial_time = clock();
     
     stringstream ss(query);
@@ -236,14 +236,18 @@ namespace indexer {
       return score[px] > score[qx];
       });
 
+    string ans;
+
     const int threshold = min((int)ranking.size(), 50); // Get only top results
     for (i = 0; i < threshold; i++) {
       const int j = ranking[i];
-      cout << right << setw(2) << (i + 1) << ") <";
-      cout << fixed << setprecision(2) << score[j] << "> ";
-      cout << titles[j] << "\n";
+      if (i)
+        ans.push_back(30);
+      ans += titles[j];
     }
     
     utility::PrintElapsedTime(initial_time);
+
+    return ans;
   }
 }

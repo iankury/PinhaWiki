@@ -1,0 +1,5 @@
+@media (orientation: portrait) {
+  body {
+    display: none !important;
+  }
+}

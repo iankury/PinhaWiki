@@ -1,0 +1,11 @@
+{
+  'name': 'PinhaWiki',
+  'version': '0.1.0',
+  'description': 'A wee search engine',
+  'author': 'Pinhata',
+  'main': 'app.js',
+  'dependencies': {
+    'express': '^6.14.8',
+    'node-gyp': '^7.1.2'
+  }
+}

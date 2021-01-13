@@ -32,7 +32,7 @@ namespace indexer {
   void LoadEngine();
   void SaveIndex();
   void BuildIndex(const string& articles_path);
-  void Query(const string& query);
+  string Query(const string& query);
 }
 
 namespace command_line_interface {
