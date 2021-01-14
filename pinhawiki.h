@@ -26,6 +26,7 @@ namespace preprocess {
 
 namespace indexer {
   void LoadTitles(const string& titles_path);
+  void LoadOriginalTitles(const string& original_titles_path);
   void WriteTerms(const string& articles_path);
   void LoadTerms();
   void LoadWeights();

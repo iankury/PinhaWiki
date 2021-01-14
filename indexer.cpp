@@ -38,6 +38,7 @@ namespace indexer {
   const int M = 3300000; // Number of terms in the collection (upper bound)
 
   vector<string> titles; // Maps each document number to its title
+  vector<string> original_titles; // Same as above but with raw titles (for making links)
   unordered_map<string, int> encode; // Assigns an id to each term (0, 1, 2...)
   int TF[M]; // Total term frequency in collection (for local TF, see freq)
   float IDF[M]; // Inverse document frequency
@@ -49,11 +50,23 @@ namespace indexer {
 
     ifstream ifs(titles_path);
     string s;
-    while (getline(ifs, s)) 
+    while (getline(ifs, s))
       titles.push_back(s);
     ifs.close();
 
     N = titles.size();
+
+    utility::PrintElapsedTime(initial_time);
+  }
+
+  void LoadOriginalTitles(const string& original_titles_path) {
+    double initial_time = clock();
+
+    ifstream ifs(original_titles_path);
+    string s;
+    while (getline(ifs, s))
+      original_titles.push_back(s);
+    ifs.close();
 
     utility::PrintElapsedTime(initial_time);
   }
@@ -114,6 +127,8 @@ namespace indexer {
   void LoadEngine() {
     cout << "Loading titles.txt\n";
     LoadTitles(utility::Path("titles"));
+    cout << "Loading original_titles.txt\n";
+    LoadOriginalTitles(utility::Path("original_titles"));
     cout << "Loading terms.txt\n";
     LoadTerms();
     cout << "Loading index.txt\n";
@@ -243,7 +258,7 @@ namespace indexer {
       const int j = ranking[i];
       if (i)
         ans.push_back(30);
-      ans += titles[j];
+      ans += original_titles[j];
     }
     
     utility::PrintElapsedTime(initial_time);
