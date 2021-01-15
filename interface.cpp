@@ -8,6 +8,7 @@ namespace command_line_interface {
     cout << "head -- writes first million chars\n";
     cout << "head20k -- writes first 20k lines\n";
     cout << "nows -- strips leading/trailing whitespace\n";
+    cout << "write_redirections -- writes map of alias to target title to file\n";
     cout << "notrash -- removes entries with trash titles, leaves only\n";
     cout << "  page tags, and inside them only title tags and text (content)\n";
     cout << "split -- writes titles to one file, articles to another\n";
@@ -42,6 +43,8 @@ namespace command_line_interface {
       exit(0);
     else if (command == "nows")
       preprocess::StripWhitespace(filename);
+    else if (command == "write_redirections")
+      preprocess::WriteRedirections(filename);
     else if (command == "notrash")
       preprocess::RemoveTrash(filename);
     else if (command == "head")

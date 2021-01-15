@@ -22,6 +22,44 @@ namespace preprocess {
     utility::PrintElapsedTime(initial_time);
   }
 
+  void WriteRedirections(const string& filename) {
+    double initial_time = clock();
+
+    ifstream ifs(filename);
+    string s, alias;
+    unordered_map<string, string> redirect;
+
+    while (getline(ifs, s)) {
+      if (s.find("<title>") != string::npos) 
+        alias = s.substr(7, s.length() - 15);
+      else {
+        const int idx = s.find("#REDIRECIONAMENTO");
+        if (idx != string::npos) {
+          int i = idx + 16, depth = 0;
+          string target_title;
+          while (i < s.length() && (depth < 2 || s[i] != ']')) {
+            if (depth == 2)
+              target_title.push_back(s[i]);
+            else if (s[i] == '[')
+              depth++;
+            i++;
+          }
+          redirect[alias] = target_title;
+        }
+      }
+    }
+
+    ifs.close();
+
+    ofstream ofs(utility::Path("redirections"));
+
+    for (auto& x : redirect)
+      ofs << x.first << "\n" << x.second << "\n";
+
+    ofs.close();
+    utility::PrintElapsedTime(initial_time);
+  }
+
   void RemoveTrash(const string& filename) {
     double initial_time = clock();
     ifstream ifs(filename);
@@ -195,6 +233,9 @@ namespace preprocess {
   void FullPreprocessing(const string& filename) {
     cout << "Stripping whitespace from raw text.\n";
     StripWhitespace(filename);
+
+    cout << "Writing redirections.\n";
+    WriteRedirections(utility::Path("nows"));
 
     cout << "Removing all tags except page and title\n";
     cout << "  and all entries with invalid titles.\n";

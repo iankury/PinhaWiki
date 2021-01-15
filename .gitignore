@@ -5,8 +5,10 @@ articles.txt
 back_titles.txt
 head.txt
 index.txt
+nows.txt
 original_titles.txt
 raw.txt
+redirections.txt
 terms.txt
 titles.txt
 a.exe - Shortcut.lnk
@@ -14,3 +16,4 @@ PinhaWikiC.sln
 PinhaWikiC.vcxproj
 PinhaWikiC.vcxproj.filters
 PinhaWikiC.vcxproj.user
+package-lock.json

@@ -13,6 +13,7 @@ namespace utility {
 
 namespace preprocess {
   void StripWhitespace(const string& filename);
+  void WriteRedirections(const string& filename);
   void RemoveTrash(const string& filename);
   void Head(const string& filename);
   void Head20k(const string& filename);
