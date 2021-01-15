@@ -1,4 +1,19 @@
 #include "pinhawiki.h"
+
+#define COMMAND_LINE_INTERFACE_MODE 1
+
+#if COMMAND_LINE_INTERFACE_MODE == 1
+
+int main() {
+
+  command_line_interface::Run();
+
+  return 0;
+}
+
+// Code below is for running the c++ addon for Node.JS
+#else
+
 #include <node.h>
 
 string HandleClientRequest(string req) {
@@ -19,7 +34,7 @@ string HandleClientRequest(string req) {
   return "Error";
 }
 
-// Code below handles communication with Node server (app.js)
+// Code below handles communication with Node.JS server (app.js)
 void Boilerplate(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::String::Utf8Value input(isolate, args[0]);
@@ -34,3 +49,5 @@ void Initialize(v8::Local<v8::Object> exports) {
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
+
+#endif
