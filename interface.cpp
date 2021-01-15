@@ -17,9 +17,11 @@ namespace command_line_interface {
     cout << "alpha -- prints only letters\n";
     cout << "nocommon -- deletes high-frequency words\n";
     cout << "nolong -- deletes single-letter words and words of 15+ letters\n";
+    cout << "noextreme -- deletes terms with extreme freq (requires terms.txt)\n";
     cout << "preprocess -- does all preprocessing sequentially\n";
     cout << "write_terms -- writes all unique terms\n";
     cout << "  along with their total frequency in the collection\n";
+    cout << "load_terms -- loads terms\n";
     cout << "load_titles -- loads document titles\n";
     cout << "build_index -- builds an index (requires load and terms.txt)\n";
     cout << "save_index -- saves the weights in index.txt as i j w lines\n";
@@ -30,8 +32,6 @@ namespace command_line_interface {
   void HandleQuery() {
     string s;
     getline(cin, s);
-
-    // TO DO: preprocess query
 
     indexer::Query(s);
   }
@@ -62,13 +62,17 @@ namespace command_line_interface {
     else if (command == "nolong")
       preprocess::DeleteLong(filename);
     else if (command == "write_terms")
-      indexer::WriteTerms(filename);
+      indexer::WriteTerms();
+    else if (command == "load_terms")
+      indexer::LoadTerms();
+    else if (command == "noextreme")
+      preprocess::DeleteExtremeFreq(filename);
     else if (command == "preprocess")
-      preprocess::FullPreprocessing(filename);
+      preprocess::FullPreprocessing();
     else if (command == "load_titles")
-      indexer::LoadTitles(filename);
+      indexer::LoadTitles();
     else if (command == "build_index")
-      indexer::BuildIndex(filename);
+      indexer::BuildIndex();
     else if (command == "save_index")
       indexer::SaveIndex();
     else if (command == "load_engine")

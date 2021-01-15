@@ -12,43 +12,28 @@ Recuperação de Informação: Conceitos e tecnologia das máquinas de busca.
 */
 
 namespace indexer {
-  struct RandomizedHash {
-    // Hash source: Written in 2015 by Sebastiano Vigna: xorshift.di.unimi.it/splitmix64.c
-    static uint64_t splitmix64(uint64_t x) {
-      x += 0x9e3779b97f4a7c15;
-      x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
-      x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
-      return x ^ (x >> 31);
-    }
-
-    size_t operator()(uint64_t x) const {
-      static const uint64_t FIXED_RANDOM =
-        chrono::steady_clock::now().time_since_epoch().count();
-      return splitmix64(x + FIXED_RANDOM);
-    }
-  };
-
-  struct PairHash { // Makes it possible to use a single unordered_map for weights w[{i,j}]
+  struct PairHash { // For using a single unordered_map for weights w[{i,j}]
     size_t operator()(const pair<int, int>& p) const {
-      return RandomizedHash{}(p.first) ^ RandomizedHash {}(p.second);
+      return hash<int>{}(p.first) ^ hash<int>{}(p.second);
     }
   };
 
   int N = 0; // Number of documents in the collection (see LoadTitles)
-  const int M = 3300000; // Number of terms in the collection (upper bound)
+  const int M = 1763000; // Number of terms in the collection (upper bound)
 
   vector<string> titles; // Maps each document number to its title
   vector<string> original_titles; // Same as above but with raw titles (for making links)
+  unordered_map<string, string> redirections;
   unordered_map<string, int> encode; // Assigns an id to each term (0, 1, 2...)
-  int TF[M]; // Total term frequency in collection (for local TF, see freq)
-  float IDF[M]; // Inverse document frequency
+  vector<int> TF(M); // Total term frequency in collection (for local TF, see freq)
+  vector<float> IDF(M); // Inverse document frequency
 
   unordered_map<pair<int, int>, float, PairHash> w; // For term i, document j has weight w[{i,j}]
 
-  void LoadTitles(const string& titles_path) {
+  void LoadTitles() {
     double initial_time = clock();
 
-    ifstream ifs(titles_path);
+    ifstream ifs(utility::Path("titles"));
     string s;
     while (getline(ifs, s))
       titles.push_back(s);
@@ -59,10 +44,10 @@ namespace indexer {
     utility::PrintElapsedTime(initial_time);
   }
 
-  void LoadOriginalTitles(const string& original_titles_path) {
+  void LoadOriginalTitles() {
     double initial_time = clock();
 
-    ifstream ifs(original_titles_path);
+    ifstream ifs(utility::Path("original_titles"));
     string s;
     while (getline(ifs, s))
       original_titles.push_back(s);
@@ -71,10 +56,22 @@ namespace indexer {
     utility::PrintElapsedTime(initial_time);
   }
 
-  void WriteTerms(const string& articles_path) {
+  void LoadRedirections() {
     double initial_time = clock();
 
-    ifstream ifs(articles_path);
+    ifstream ifs(utility::Path("redirections"));
+    string alias, target_title;
+    while (getline(ifs, alias) && getline(ifs, target_title)) 
+      redirections[alias] = target_title;
+    ifs.close();
+
+    utility::PrintElapsedTime(initial_time);
+  }
+
+  void WriteTerms() {
+    double initial_time = clock();
+
+    ifstream ifs(utility::Path("articles"));
     string s;
     unordered_map<string, int> unique_terms;
     while (getline(ifs, s)) {
@@ -83,6 +80,12 @@ namespace indexer {
         unique_terms[s]++;
     }
     ifs.close();
+
+    for (const string& x : titles) {
+      stringstream ss(x);
+      while (getline(ss, s, ' '))
+        unique_terms[s]++;
+    }
 
     ofstream ofs(utility::Path("terms"));
     for (auto& term : unique_terms)
@@ -96,15 +99,15 @@ namespace indexer {
     double initial_time = clock();
 
     ifstream ifs(utility::Path("terms"));
-    string s, fr;
-    int id = -1;
-    while (ifs >> s >> fr) {
-      encode[s] = ++id;
-      TF[id] = stoi(fr);
+    string s;
+    int id = 0;
+    while (ifs >> s >> TF[id]) {
+      encode[s] = id;
+      ++id;
     }
     ifs.close();
 
-    for (int i = 0; i < encode.size(); i++)
+    for (int i = 0; i < encode.size(); i++) 
       IDF[i] = log2((float)N / (float)TF[i]);
 
     utility::PrintElapsedTime(initial_time);
@@ -126,9 +129,9 @@ namespace indexer {
 
   void LoadEngine() {
     cout << "Loading titles.txt\n";
-    LoadTitles(utility::Path("titles"));
+    LoadTitles();
     cout << "Loading original_titles.txt\n";
-    LoadOriginalTitles(utility::Path("original_titles"));
+    LoadOriginalTitles();
     cout << "Loading terms.txt\n";
     LoadTerms();
     cout << "Loading index.txt\n";
@@ -141,21 +144,21 @@ namespace indexer {
     ofstream ofs(utility::Path("index"));
     for (auto& x : w) {
       ofs << x.first.first << " " << x.first.second << " ";
-      ofs << fixed << setprecision(4) << x.second << "\n";
+      ofs << fixed << setprecision(3) << x.second << "\n";
     }
     ofs.close();
 
     utility::PrintElapsedTime(initial_time);
   }
 
-  void BuildIndex(const string& articles_path) {
+  void BuildIndex() {
     LoadTerms();
 
     cout << "Loaded " << encode.size() << " terms.\n";
 
     double initial_time = clock();
 
-    ifstream ifs(articles_path);
+    ifstream ifs(utility::Path("articles"));
     string s;
 
     for (int j = 0; getline(ifs, s); j++) { // For each document j
@@ -164,7 +167,7 @@ namespace indexer {
       unordered_map<string, int> title_freq; // Term i occurs freq[i] times in this document's title
       vector<pair<float, int>> aux;
       int i;
-      float weight, text_weight, title_weight;
+      float text_weight, title_weight, weight;
 
       while (sst >> s) {
         title_freq[s]++;
@@ -179,19 +182,20 @@ namespace indexer {
         if (IDF[i] > 0) {
           text_weight = log2(1.f + p.second) * IDF[i];
           title_weight = title_freq.count(p.first) ? log2(1.f + title_freq[p.first]) * IDF[i] : 0;
-          weight = .6f * title_weight + .4f * text_weight;
-          if (weight > 0.03)
+          weight = .7f * title_weight + .3f * text_weight;
+          if (weight > .03f)
             aux.push_back({ weight, i });
         }
       }
 
-      if (aux.size() < 201) {
+      const int at_least = 100;
+      if (aux.size() <= at_least) {
         for (auto& p : aux)
           w[{ p.second, j }] = p.first;
       }
       else {
         sort(rbegin(aux), rend(aux));
-        const int limit = max(100, (int)aux.size() / 4); // Top 25% heaviest, at least 100
+        const int limit = max(at_least, (int)aux.size() / 4);
         for (int k = 0; k < limit; k++) // Consider only the heaviest terms for document j
           w[{ aux[k].second, j }] = aux[k].first;
       }
@@ -215,10 +219,13 @@ namespace indexer {
     float denominator_left_sum, denominator_right_sum;
     float wij, wiq;
 
-    int i;
-
     vector<float> score(N); // Similarity between each document and the query
-    vector<int> ranking;
+    auto comp = [&](int px, int qx) { // Heaviest first
+      if (score[px] == score[qx])
+        return px < qx;
+      return score[px] > score[qx]; 
+    }; 
+    auto ranking = set<int, decltype(comp)>(comp);
 
     for (int j = 0; j < N; j++) {
       numerator = denominator_left_sum = denominator_right_sum = 0;
@@ -226,9 +233,9 @@ namespace indexer {
         if (!encode.count(p.first))
           continue;
 
-        i = encode[p.first];
+        const int i = encode[p.first];
 
-        wij = w.count({ i, j }) ? w[{ i, j }] : 0;
+        wij = w.count({ i, j }) ? w[{ i, j }] : .0f;
 
         wiq = log2(1.f + p.second) * IDF[i];
 
@@ -239,26 +246,31 @@ namespace indexer {
       if (numerator > 0) {
         denominator = sqrt(denominator_left_sum) * sqrt(denominator_right_sum);
         if (titles[j] == query)
-          score[j] = 9.99f;
+          score[j] = 998.99f;
+        else if (titles[j] == query + " (desambiguacao)")
+          score[j] = 999.99f;
         else
           score[j] = numerator / denominator;
         if (score[j] > 0.01)
-          ranking.push_back(j);
+          ranking.insert(j);
       }
     }
 
-    sort(begin(ranking), end(ranking), [&](int px, int qx) {
-      return score[px] > score[qx];
-      });
-
     string ans;
+    unordered_set<string> visited;
 
-    const int threshold = min((int)ranking.size(), 50); // Get only top results
-    for (i = 0; i < threshold; i++) {
-      const int j = ranking[i];
-      if (i)
-        ans.push_back(30);
-      ans += original_titles[j];
+    for (int j : ranking) {
+      auto it = redirections.find(original_titles[j]);
+      const string cur_title = it == redirections.end() ? original_titles[j] : (*it).second;
+      if (visited.count(cur_title))
+        continue;
+      visited.insert(cur_title);
+
+      ans += cur_title;
+      ans.push_back(30); // Separator
+
+      if (visited.size() >= 50) // Keep only top results
+        break;
     }
     
     utility::PrintElapsedTime(initial_time);

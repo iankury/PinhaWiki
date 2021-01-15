@@ -3,6 +3,7 @@
 namespace preprocess {
   void StripWhitespace(const string& filename) {
     double initial_time = clock();
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("nows"));
     string s;
@@ -19,6 +20,7 @@ namespace preprocess {
     }
     ifs.close();
     ofs.close();
+
     utility::PrintElapsedTime(initial_time);
   }
 
@@ -57,11 +59,13 @@ namespace preprocess {
       ofs << x.first << "\n" << x.second << "\n";
 
     ofs.close();
+
     utility::PrintElapsedTime(initial_time);
   }
 
   void RemoveTrash(const string& filename) {
     double initial_time = clock();
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("notrash"));
     string s;
@@ -94,11 +98,13 @@ namespace preprocess {
 
     ifs.close();
     ofs.close();
+
     utility::PrintElapsedTime(initial_time);
   }
 
   void Head(const string& filename) {
     double initial_time = clock();
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("head"));
     ifs >> noskipws;
@@ -110,11 +116,13 @@ namespace preprocess {
     }
     ifs.close();
     ofs.close();
+
     utility::PrintElapsedTime(initial_time);
   }
 
   void Head20k(const string& filename) {
     double initial_time = clock();
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("20k"));
     string s;
@@ -124,11 +132,13 @@ namespace preprocess {
     }
     ifs.close();
     ofs.close();
+
     utility::PrintElapsedTime(initial_time);
   }
 
   void SplitTitlesAndArticles(const string& filename) {
     double initial_time = clock();
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("articles"));
     ofstream ofst(utility::Path("titles"));
@@ -146,75 +156,96 @@ namespace preprocess {
     ifs.close();
     ofs.close();
     ofst.close();
+
     utility::PrintElapsedTime(initial_time);
+  }
+
+  string LowerAsciiSingleLine(const string& line) {
+    string ans;
+    for (int i = 0; i < line.length(); i++) {
+      if (line[i] == -61) {
+        ++i;
+        const int code = ((int)line[i] + 255) % 255;
+        if (!utility::compressed_chars.count(code)) {
+          ans.push_back(char{ -61 });
+          ans.push_back(line[i]);
+        }
+        else
+          ans.push_back(tolower(utility::compressed_chars[code]));
+      }
+      else
+        ans.push_back(tolower(line[i]));
+    }
+    return ans;
   }
 
   void LowerAscii(const string& filename) {
     double initial_time = clock();
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("lower"));
-    ifs >> noskipws;
-    ofs << noskipws;
-    char c;
-    int code;
-    while (ifs >> c) {
-      if (c == -61) {
-        ifs >> c;
-        code = ((int)c + 255) % 255;
-        if (!utility::compressed_chars.count(code))
-          ofs << char(-61) << c;
-        else
-          ofs << (char)tolower(utility::compressed_chars[code]);
-      }
-      else
-        ofs << (char)tolower(c);
-    }
+    string s;
+    while (getline(ifs, s)) 
+      ofs << LowerAsciiSingleLine(s) << "\n";
     ifs.close();
     ofs.close();
+
     utility::PrintElapsedTime(initial_time);
   }
 
   void Alpha(const string& filename) {
     double initial_time = clock();
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("alpha"));
-    ifs >> noskipws;
-    ofs << noskipws;
-    char c, last = 0;
-    while (ifs >> c) {
-      if (isalpha(c) || c == '\n') {
-        ofs << c;
-        last = c;
+    string s;
+    while (getline(ifs, s)) {
+      string to_write;
+      bool last_is_space = false;
+      for (int i = 0; i < s.length(); i++) {
+        if (isalpha(s[i]) || s[i] == '\n') {
+          last_is_space = false;
+          to_write.push_back(s[i]);
+        }
+        else if (!last_is_space) {
+          to_write.push_back(' ');
+          last_is_space = true;
+        }
       }
-      else if (last != ' ') {
-        ofs << ' ';
-        last = ' ';
-      }
+      ofs << to_write << "\n";
     }
     ifs.close();
     ofs.close();
+
     utility::PrintElapsedTime(initial_time);
+  }
+
+  string DeleteCommonSingleLine(const string& line) {
+    string s, ans;
+    stringstream ss(line);
+    while (getline(ss, s, ' '))
+      if (!utility::common_terms.count(s))
+        ans += s + " ";
+    return ans;
   }
 
   void DeleteCommon(const string& filename) {
     double initial_time = clock();
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("nocommon"));
     string s;
-    while (getline(ifs, s)) {
-      stringstream ss(s);
-      while (getline(ss, s, ' '))
-        if (!utility::common_terms.count(s))
-          ofs << s << " ";
-      ofs << "\n";
-    }
+    while (getline(ifs, s))
+      ofs << DeleteCommonSingleLine(s) << "\n";
     ifs.close();
     ofs.close();
+
     utility::PrintElapsedTime(initial_time);
   }
 
   void DeleteLong(const string& filename) {
     double initial_time = clock();
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("nolong"));
     string s;
@@ -227,12 +258,43 @@ namespace preprocess {
     }
     ifs.close();
     ofs.close();
+
     utility::PrintElapsedTime(initial_time);
   }
 
-  void FullPreprocessing(const string& filename) {
+  string DeleteExtremeFreqSingleLine(const string& line) {
+    string s, ans;
+    stringstream ss(line);
+    while (getline(ss, s, ' ')) {
+      if (!indexer::encode.count(s))
+        continue;
+      const int i = indexer::encode[s];
+      const int freq = indexer::TF[i];
+      if (freq > 2 && freq < 100000)
+        ans += s + " ";
+    }
+    return ans;
+  }
+
+  void DeleteExtremeFreq(const string& filename) {
+    double initial_time = clock();
+
+    ifstream ifs(filename);
+    ofstream ofs(utility::Path("noextreme"));
+    string s;
+    while (getline(ifs, s))
+      ofs << DeleteExtremeFreqSingleLine(s) << "\n";
+    ifs.close();
+    ofs.close();
+
+    utility::PrintElapsedTime(initial_time);
+  }
+
+  void FullPreprocessing() {
+    double initial_time = clock();
+
     cout << "Stripping whitespace from raw text.\n";
-    StripWhitespace(filename);
+    StripWhitespace(utility::Path("raw"));
 
     cout << "Writing redirections.\n";
     WriteRedirections(utility::Path("nows"));
@@ -278,5 +340,8 @@ namespace preprocess {
       (utility::Path("lower")).c_str(),
       (utility::Path("titles")).c_str()
     );
+
+    cout << "Finished preprocessing chain.\n";
+    utility::PrintElapsedTime(initial_time);
   }
 }

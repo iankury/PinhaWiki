@@ -1,6 +1,6 @@
 #include "pinhawiki.h"
 
-#define COMMAND_LINE_INTERFACE_MODE 1
+#define COMMAND_LINE_INTERFACE_MODE 0
 
 #if COMMAND_LINE_INTERFACE_MODE == 1
 
@@ -28,7 +28,7 @@ string HandleClientRequest(string req) {
     return "";
   }
   else if (req_type == 'q') 
-    return indexer::Query(req);
+    return indexer::Query(preprocess::LowerAsciiSingleLine(req));
 
   cout << "Error: unexpected req_type\n";
   return "Error";

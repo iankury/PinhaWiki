@@ -35,6 +35,7 @@ function Create() {
     emitter.setSpeed(60)
     emitter.setLifespan(900)
     emitter.start()
+    Loaded()
   }, 2000)
 
   const zone = this.add.zone(vw(0.5) - 0.15 * logo.width, 100).setSize(vw(0.02), 200)

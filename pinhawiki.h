@@ -18,22 +18,26 @@ namespace preprocess {
   void Head(const string& filename);
   void Head20k(const string& filename);
   void SplitTitlesAndArticles(const string& filename);
+  string LowerAsciiSingleLine(const string& line);
   void LowerAscii(const string& filename);
   void Alpha(const string& filename);
   void DeleteCommon(const string& filename);
   void DeleteLong(const string& filename);
-  void FullPreprocessing(const string& filename);
+  void DeleteExtremeFreq(const string& filename);
+  void FullPreprocessing();
 }
 
 namespace indexer {
-  void LoadTitles(const string& titles_path);
-  void LoadOriginalTitles(const string& original_titles_path);
-  void WriteTerms(const string& articles_path);
+  extern unordered_map<string, int> encode;
+  extern vector<int> TF;
+  void LoadTitles();
+  void LoadOriginalTitles();
+  void WriteTerms();
   void LoadTerms();
   void LoadWeights();
   void LoadEngine();
   void SaveIndex();
-  void BuildIndex(const string& articles_path);
+  void BuildIndex();
   string Query(const string& query);
 }
 

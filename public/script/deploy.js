@@ -1,7 +1,10 @@
 function Deploy() {
   pinhawiki = new Phaser.Game(config)
-
-  $('#search_box').focus()
 }
 
 $(document).ready(Deploy)
+
+function Loaded() {
+  $('#search_box').show()
+  $('#search_box').focus()
+}

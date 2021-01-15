@@ -52,8 +52,8 @@ namespace utility {
     double seconds = (double(clock()) - initial_time) / 1000.;
     int minutes = (int)seconds / 60;
     seconds -= minutes * 60.;
-    cout << "Time elapsed: " << minutes << " minutes, ";
-    cout << fixed << setprecision(2) << seconds << " seconds.\n";
+    cout << "==>" << right << setw(3) << minutes << " min";
+    cout << right << setw(6) << fixed << setprecision(2) << seconds << " s\n";
   }
 
   bool ValidTitle(const string& title) {
