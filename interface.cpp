@@ -5,35 +5,28 @@ namespace command_line_interface {
     cout << "Displaying help. Available commands:\n";
     cout << "help -- displays available commands\n";
     cout << "exit -- closes the program\n";
-    cout << "head -- writes first million chars\n";
-    cout << "head20k -- writes first 20k lines\n";
-    cout << "nows -- strips leading/trailing whitespace\n";
-    cout << "write_redirections -- writes map of alias to target title to file\n";
-    cout << "notrash -- removes entries with trash titles, leaves only\n";
+    cout << "head <path> -- writes first million chars\n";
+    cout << "head20k <path> -- writes first 20k lines\n";
+    cout << "nows <path> -- strips leading/trailing whitespace\n";
+    cout << "write_redirections <path> -- writes map of alias to target title to file\n";
+    cout << "notrash <path> -- removes entries with trash titles, leaves only\n";
     cout << "  page tags, and inside them only title tags and text (content)\n";
-    cout << "split -- writes titles to one file, articles to another\n";
-    cout << "lower_ascii -- makes each char lowercase and ASCII,\n";
+    cout << "split <path> -- writes titles to one file, articles to another\n";
+    cout << "lower_ascii <path> -- makes each char lowercase and ASCII,\n";
     cout << "  but will keep non-Portuguese non-ASCII chars\n";
-    cout << "alpha -- prints only letters\n";
-    cout << "nocommon -- deletes high-frequency words\n";
-    cout << "nolong -- deletes single-letter words and words of 15+ letters\n";
-    cout << "noextreme -- deletes terms with extreme freq (requires terms.txt)\n";
+    cout << "alpha <path> -- prints only letters\n";
+    cout << "nocommon <path> -- deletes high-frequency words\n";
+    cout << "nolong <path> -- deletes single-letter words and words of 15+ letters\n";
+    cout << "noextreme <path> -- deletes terms with extreme frequencies";
+    cout << "  from articles (requires terms.txt)\n";
     cout << "preprocess -- does all preprocessing sequentially\n";
-    cout << "write_terms -- writes all unique terms\n";
+    cout << "save_terms -- writes all unique terms (requires titles.txt)\n";
     cout << "  along with their total frequency in the collection\n";
     cout << "load_terms -- loads terms\n";
     cout << "load_titles -- loads document titles\n";
-    cout << "build_index -- builds an index (requires load and terms.txt)\n";
-    cout << "save_index -- saves the weights in index.txt as i j w lines\n";
+    cout << "build_index -- builds an index (requires titles.txt and terms.txt)\n";
+    cout << "save_index -- saves the weights to index.txt as i j w lines\n";
     cout << "load_engine -- loads whole engine (titles, terms, index)\n";
-    cout << "query -- queries the index (requires index)\n";
-  }
-
-  void HandleQuery() {
-    string s;
-    getline(cin, s);
-
-    indexer::Query(s);
   }
 
   void HandleCommand(string command, string filename) {
@@ -61,8 +54,8 @@ namespace command_line_interface {
       preprocess::DeleteCommon(filename);
     else if (command == "nolong")
       preprocess::DeleteLong(filename);
-    else if (command == "write_terms")
-      indexer::WriteTerms();
+    else if (command == "save_terms")
+      indexer::SaveTerms();
     else if (command == "load_terms")
       indexer::LoadTerms();
     else if (command == "noextreme")
@@ -77,8 +70,6 @@ namespace command_line_interface {
       indexer::SaveIndex();
     else if (command == "load_engine")
       indexer::LoadEngine();
-    else if (command == "query")
-      HandleQuery();
     else {
       cout << command << " is not a valid command. ";
       cout << "Type help for a list of commands.\n";

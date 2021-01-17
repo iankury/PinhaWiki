@@ -12,8 +12,9 @@ function DisplayResponse(res) {
   }) 
 }
 
-function SendQuery(data_to_send) {
-  $.get(`q/${data_to_send}`, DisplayResponse)
+function SendQuery(raw_data) {
+  const encoded_data = encode(raw_data)
+  $.get(`q/${encoded_data}`, DisplayResponse)
 }
 
 function Keydown(e) {

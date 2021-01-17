@@ -265,14 +265,9 @@ namespace preprocess {
   string DeleteExtremeFreqSingleLine(const string& line) {
     string s, ans;
     stringstream ss(line);
-    while (getline(ss, s, ' ')) {
-      if (!indexer::encode.count(s))
-        continue;
-      const int i = indexer::encode[s];
-      const int freq = indexer::TF[i];
-      if (freq > 2 && freq < 100000)
+    while (getline(ss, s, ' ')) 
+      if (indexer::encode.count(s))
         ans += s + " ";
-    }
     return ans;
   }
 
@@ -328,18 +323,7 @@ namespace preprocess {
       (utility::Path("articles")).c_str()
     );
 
-    cout << "Keeping file with original titles.\n";
-    rename(
-      (utility::Path("titles")).c_str(),
-      (utility::Path("original_titles")).c_str()
-    );
-
-    cout << "Making separate lower ascii titles file.\n";
-    LowerAscii(utility::Path("original_titles"));
-    rename(
-      (utility::Path("lower")).c_str(),
-      (utility::Path("titles")).c_str()
-    );
+    cout << "Keeping original titles.\n";
 
     cout << "Finished preprocessing chain.\n";
     utility::PrintElapsedTime(initial_time);

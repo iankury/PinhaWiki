@@ -3,12 +3,16 @@ using namespace std;
 
 namespace utility {
   extern const string kPathPrefix;
-  string Path(const string& filename);
   extern unordered_map<int, int> compressed_chars;
   extern vector<string> invalid_substrings;
   extern unordered_set<string> common_terms;
+
+  string Path(const string& filename);
   void PrintElapsedTime(const double& initial_time);
   bool ValidTitle(const string& title);
+  bool AllAscii(const string& s);
+  string NoParentheses(const string& s);
+  size_t CountLines(const string& filename);
 }
 
 namespace preprocess {
@@ -29,21 +33,24 @@ namespace preprocess {
 
 namespace indexer {
   extern unordered_map<string, int> encode;
-  extern vector<int> TF;
+
   void LoadTitles();
   void LoadOriginalTitles();
-  void WriteTerms();
+  void LoadRedirections();
   void LoadTerms();
-  void LoadWeights();
-  void LoadEngine();
+  void SaveTerms();
+  void LoadIndex();
   void SaveIndex();
+  void BuildDisambiguation();
   void BuildIndex();
+
+  // ↓ Engine
+  void LoadEngine();
   string Query(const string& query);
 }
 
 namespace command_line_interface {
   void PrintHelp();
-  void HandleQuery();
   void HandleCommand(string command, string filename);
   void Run();
 }

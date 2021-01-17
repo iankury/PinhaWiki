@@ -1,3 +1,14 @@
+/*
+Source of the main Information Retrieval techniques applied here and
+theoretical groundwork for the model chosen (Vector Space Model),
+particularly the formulas for computing TF-IDF weights and
+document-query similarity scores:
+
+BAEZA-YATES, Ricardo; RIBEIRO-NETO, Berthier.
+Recuperação de Informação: Conceitos e tecnologia das máquinas de busca.
+2. ed. Porto Alegre: Bookman, 2013. 590 p. ISBN 978-85-8260-049-8. E-book.
+*/
+
 #include "pinhawiki.h"
 
 #define COMMAND_LINE_INTERFACE_MODE 0
@@ -27,8 +38,14 @@ string HandleClientRequest(string req) {
     indexer::LoadEngine();
     return "";
   }
-  else if (req_type == 'q') 
-    return indexer::Query(preprocess::LowerAsciiSingleLine(req));
+  else if (req_type == 'q') {
+    const string processed_query = preprocess::LowerAsciiSingleLine(req);
+    ofstream ofs("log.txt", ios_base::app);
+    ofs << req << " -> " << processed_query << "\n";
+    ofs.close();
+
+    return indexer::Query(processed_query);
+  }
 
   cout << "Error: unexpected req_type\n";
   return "Error";

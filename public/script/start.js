@@ -8,3 +8,5 @@ const scalew = x => x * vw(1) / 1536
 
 const SEPARATOR = String.fromCharCode(30)
 const WIKI_URL = 'https://pt.wikipedia.org/wiki/'
+
+const encode = s => s.split('').map(x => x.charCodeAt(0)).join('a')

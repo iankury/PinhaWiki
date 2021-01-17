@@ -3,10 +3,6 @@
 namespace utility {
   const string kPathPrefix = "C:\\Users\\Administrator\\repos\\PinhaWikiC\\";
 
-  string Path(const string& filename) {
-    return kPathPrefix + filename + ".txt";
-  }
-
   unordered_map<int, int> compressed_chars{
     { 128, 65 }, { 136, 69 }, { 140, 73 }, { 146, 79 }, { 153, 85 }, { 127, 65 },
     { 130, 65 }, { 148, 79 }, { 129, 65 }, { 137, 69 }, { 147, 79 }, { 134, 67 },
@@ -48,6 +44,10 @@ namespace utility {
     "logo", "cruz", "meio", "lado"
   };
 
+  string Path(const string& filename) {
+    return kPathPrefix + filename + ".txt";
+  }
+
   void PrintElapsedTime(const double& initial_time) {
     double seconds = (double(clock()) - initial_time) / 1000.;
     int minutes = (int)seconds / 60;
@@ -68,5 +68,31 @@ namespace utility {
       return false;
 
     return true;
+  }
+
+  bool AllAscii(const string& s) {
+    for (char c : s)
+      if (c < 33 || c > 126)
+        return false;
+    return true;
+  }
+
+  string NoParentheses(const string& s) {
+    string ans;
+
+    for (char c : s)
+      if (c != '(' && c != ')')
+        ans.push_back(c);
+
+    return ans;
+  }
+
+  size_t CountLines(const string& filename) {
+    size_t ans = 0;
+    ifstream ifs(Path(filename));
+    string aux;
+    while (getline(ifs, aux))
+      ++ans;
+    return ans;
   }
 }
