@@ -8,6 +8,16 @@ namespace indexer {
     }
   };
 
+  struct IndexNode {
+    int j;
+    float w;
+  };
+
+  struct DocumentNode {
+    float numerator, denominator_left_sum;
+    DocumentNode() : numerator(0), denominator_left_sum(0) {}
+  };
+
   // ↓ Number of documents in the collection (assigned in LoadTitles)
   size_t N; 
 
@@ -26,8 +36,9 @@ namespace indexer {
 
   unordered_map<string, int> disambiguation; // Maps disambiguation title to title id
 
-  // ↓ For term i, document j has weight w[{ i, j }]
-  unordered_map<pair<int, int>, float, PairHash> w; 
+  vector<IndexNode*> inverted_index;
+
+  vector<int> inverted_index_sizes;
 
   // ↓ Resized and assigned in LoadTerms
   vector<int> TF; // Term Frequency of term i in collection (not the local TF)
@@ -93,6 +104,8 @@ namespace indexer {
     M = utility::CountLines("terms");
     TF.resize(M);
     IDF.resize(M);
+    inverted_index.resize(N);
+    inverted_index_sizes.assign(N, 0);
 
     ifstream ifs(utility::Path("terms"));
     string term;
@@ -134,9 +147,9 @@ namespace indexer {
     }
 
     // ↓ Get rid of extreme terms
-    for (auto& p : unique_terms)
-      if (p.second < 4 || p.second > 99999)
-        p.second = 0;
+    for (auto& term : unique_terms)
+      if (term.second < 4 || term.second > 99999)
+        term.second = 0;
 
     ofstream ofs(utility::Path("terms"));
     for (auto& term : unique_terms)
@@ -151,10 +164,23 @@ namespace indexer {
     double initial_time = clock();
 
     ifstream ifs(utility::Path("index"));
-    int i, j;
-    float wx;
-    while (ifs >> i >> j >> wx)
-      w[{ i, j }] = wx;
+
+    string line;
+    int sz, j;
+    float w;
+    for (int i = 0; i < N; i++) {
+      getline(ifs, line);
+      stringstream ss(line);
+      ss >> sz;
+      inverted_index_sizes[i] = sz;
+
+      inverted_index[i] = new IndexNode[sz];
+
+      for (int k = 0; k < sz; k++) {
+        ss >> j >> w;
+        inverted_index[i][k] = IndexNode{ j, w };
+      }
+    }
 
     ifs.close();
 
@@ -165,9 +191,14 @@ namespace indexer {
     double initial_time = clock();
 
     ofstream ofs(utility::Path("index"));
-    for (auto& x : w) {
-      ofs << x.first.first << " " << x.first.second << " ";
-      ofs << fixed << setprecision(3) << x.second << "\n";
+    for (int i = 0; i < N; i++) {
+      const int sz = inverted_index_sizes[i];
+      ofs << sz;
+      for (int k = 0; k < sz; k++) {
+        ofs << " " << inverted_index[i][k].j << " ";
+        ofs << fixed << setprecision(3) << inverted_index[i][k].w;
+      }
+      ofs << "\n";
     }
     ofs.close();
 
@@ -201,6 +232,9 @@ namespace indexer {
 
     double initial_time = clock();
 
+    // ↓ For term i, document j has weight w[{ i, j }]
+    unordered_map<pair<int, int>, float, PairHash> w;
+
     ifstream ifs(utility::Path("articles"));
 
     string line, term;
@@ -223,16 +257,20 @@ namespace indexer {
           term = utility::NoParentheses(term);
           if (term.length() < 2)
             continue;
-          const int i = encode[term];
-          title_TF[i]++;
-          document_TF[i] = 0;
+
+          if (encode.count(term)) {
+            const int i = encode[term];
+            title_TF[i]++;
+            document_TF[i] = 0;
+          }
         }
 
       // ↓ Build text Term Frequencies
-      while (ss >> term) {
-        const int i = encode[term];
-        document_TF[i]++;
-      }
+      while (ss >> term) 
+        if (encode.count(term)) {
+          const int i = encode[term];
+          document_TF[i]++;
+        }
 
       // ↓ Build weights for all terms for document j
       for (const pair<int, int>& p : document_TF) {
@@ -266,6 +304,26 @@ namespace indexer {
     
     ifs.close();
 
+    // ↓ Set inverted index sizes
+    for (const auto& p : w) 
+      inverted_index_sizes[p.first.first]++;
+    for (int i = 0; i < N; i++)
+      inverted_index[i] = new IndexNode[inverted_index_sizes[i]];
+
+    vector<int> inverted_index_current_position(N);
+
+    // ↓ Build the index
+    for (const auto& p : w) {
+      const int i = p.first.first;
+      const int j = p.first.second;
+      const float weight = p.second;
+      const int idx = inverted_index_current_position[i];
+
+      inverted_index[i][idx] = IndexNode{ j, weight };
+
+      ++inverted_index_current_position[i];
+    }
+
     utility::PrintElapsedTime(initial_time);
   }
 
@@ -289,6 +347,8 @@ namespace indexer {
     double initial_time = clock();
 
     vector<float> score(N); // Similarity between each document and the query
+
+    unordered_map<int, DocumentNode> doc_info;
 
     auto comp = [&](int px, int qx) { // Heaviest first
       if (score[px] == score[qx])
@@ -318,10 +378,7 @@ namespace indexer {
     const size_t query_term_count = query_ids.size();
     if (query_term_count == 0)
       return "Conjunto vazio";
-
-    // ↓ These refer to formula 2.10 on page 46 of the book
-    float numerator = 0, denominator;
-    float denominator_left_sum;
+    
     float denominator_right_sum = 0;
 
     // ↓ Precompute denominator_right_sum
@@ -331,28 +388,33 @@ namespace indexer {
     }
     denominator_right_sum = sqrt(denominator_right_sum);
 
-    for (size_t j = 0; j < N; j++) {
+    // ↓ Get relevant document info (only for documents connected to query terms)
+    for (int i : query_ids) {
+      const int sz = inverted_index_sizes[i];
+      for (int k = 0; k < sz; k++) {
+        const int j = inverted_index[i][k].j;
+        const int w = inverted_index[i][k].w;
+
+        // ↓ Part of formula 2.10 on page 46 of the book
+        doc_info[j].numerator += w * IDF[i]; // Assume wiq = IDF[i]
+        doc_info[j].denominator_left_sum += w * w;
+      }
+    }
+
+    for (const auto& doc : doc_info) {
+      const int j = doc.first;
+
       if (titles[j] == query) { // Base case: perfect match
         score[j] = 2.f;
         ranking.insert(j);
         continue;
       }
+      
+      const float numerator = doc.second.numerator;
+      const float denominator_left_sum = sqrt(doc.second.denominator_left_sum);
 
-      numerator = denominator_left_sum = 0;
-
-      for (int i : query_ids) {
-        if (!w.count({ i, j })) // Base case: term i doesn't occur in document j
-          continue;
-
-        const float wij = w[{ i, j }];
-
-        numerator += wij * IDF[i]; // Assume wiq = IDF[i]
-        denominator_left_sum += wij * wij;
-      }
       if (numerator > 0) {
-        denominator = sqrt(denominator_left_sum) * denominator_right_sum;
-
-        score[j] = numerator / denominator;
+        score[j] = numerator / (denominator_left_sum * denominator_right_sum);
         ranking.insert(j);
       }
     }
