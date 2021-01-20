@@ -39,12 +39,18 @@ string HandleClientRequest(string req) {
     return "";
   }
   else if (req_type == 'q') {
+    double initial_time = clock();
+
     const string processed_query = preprocess::LowerAsciiSingleLine(req);
-    ofstream ofs("log.txt", ios_base::app);
-    ofs << req << " -> " << processed_query << "\n";
+    ofstream ofs(utility::Path("log"), ios_base::app);
+    ofs << req << " -> " << processed_query << " ";
     ofs.close();
 
-    return indexer::Query(processed_query);
+    string ans = indexer::Query(processed_query);
+
+    utility::PrintElapsedTime(initial_time);
+
+    return ans;
   }
 
   cout << "Error: unexpected req_type\n";

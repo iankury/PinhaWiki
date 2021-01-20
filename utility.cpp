@@ -48,12 +48,21 @@ namespace utility {
     return kPathPrefix + filename + ".txt";
   }
 
-  void PrintElapsedTime(const double& initial_time) {
+  void PrintElapsedTime(const double& initial_time, bool write_to_log = false) {
     double seconds = (double(clock()) - initial_time) / 1000.;
     int minutes = (int)seconds / 60;
     seconds -= minutes * 60.;
-    cout << "==>" << right << setw(3) << minutes << " min";
-    cout << right << setw(6) << fixed << setprecision(2) << seconds << " s\n";
+
+    if (write_to_log) {
+      ofstream ofs(Path("log"), ios_base::app);
+      ofs << "==>" << right << setw(3) << minutes << " min";
+      ofs << right << setw(7) << fixed << setprecision(3) << seconds << " s\n";
+      ofs.close();
+    }
+    else {
+      cout << "==>" << right << setw(3) << minutes << " min";
+      cout << right << setw(7) << fixed << setprecision(3) << seconds << " s\n";
+    }
   }
 
   bool ValidTitle(const string& title) {

@@ -8,7 +8,7 @@ namespace utility {
   extern unordered_set<string> common_terms;
 
   string Path(const string& filename);
-  void PrintElapsedTime(const double& initial_time);
+  void PrintElapsedTime(const double& initial_time, bool write_to_log);
   bool ValidTitle(const string& title);
   bool AllAscii(const string& s);
   string NoParentheses(const string& s);

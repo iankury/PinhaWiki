@@ -344,8 +344,6 @@ namespace indexer {
   }
 
   string Query(const string& query) {
-    double initial_time = clock();
-
     vector<float> score(N); // Similarity between each document and the query
 
     unordered_map<int, DocumentNode> doc_info;
@@ -449,8 +447,6 @@ namespace indexer {
       if (visited.size() >= 50) // Keep only top results
         break;
     }
-
-    utility::PrintElapsedTime(initial_time);
 
     return ans;
   }
