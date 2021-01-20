@@ -48,7 +48,7 @@ string HandleClientRequest(string req) {
 
     string ans = indexer::Query(processed_query);
 
-    utility::PrintElapsedTime(initial_time);
+    utility::PrintElapsedTime(initial_time, true);
 
     return ans;
   }

@@ -25,6 +25,7 @@ namespace indexer {
   size_t M;
 
   vector<string> titles; // Maps document id to title
+  unordered_map<string, int> title_to_id; // Maps title to document id (for checking exact matches)
 
   // ↓ Unprocessed titles for returning results that can be used directly in links
   vector<string> original_titles; 
@@ -32,7 +33,7 @@ namespace indexer {
   // ↓ Send only the final destination when returning results
   unordered_map<string, string> redirections; // Maps alias to target title
 
-  unordered_map<string, int> encode; // Maps term to id (0, 1, 2, ...)
+  unordered_map<string, int> term_to_id; // Maps term to id (0, 1, 2, ...)
 
   unordered_map<string, int> disambiguation; // Maps disambiguation title to title id
 
@@ -65,8 +66,10 @@ namespace indexer {
 
     ifstream ifs(utility::Path("titles"));
     string s;
-    while (getline(ifs, s))
+    while (getline(ifs, s)) {
+      title_to_id[s] = titles.size();
       titles.push_back(s);
+    }
     ifs.close();
 
     N = titles.size();
@@ -111,7 +114,7 @@ namespace indexer {
     string term;
     int id = -1;
     while (ifs >> term >> TF[++id]) 
-      encode[term] = id;
+      term_to_id[term] = id;
     ifs.close();
 
     BuildIDF();
@@ -258,8 +261,8 @@ namespace indexer {
           if (term.length() < 2)
             continue;
 
-          if (encode.count(term)) {
-            const int i = encode[term];
+          if (term_to_id.count(term)) {
+            const int i = term_to_id[term];
             title_TF[i]++;
             document_TF[i] = 0;
           }
@@ -267,8 +270,8 @@ namespace indexer {
 
       // ↓ Build text Term Frequencies
       while (ss >> term) 
-        if (encode.count(term)) {
-          const int i = encode[term];
+        if (term_to_id.count(term)) {
+          const int i = term_to_id[term];
           document_TF[i]++;
         }
 
@@ -362,10 +365,10 @@ namespace indexer {
 
     // ↓ Build query_ids and filter query terms
     while (ss >> term) {
-      if (!encode.count(term)) // Term doesn't exist in collection
+      if (!term_to_id.count(term)) // Term doesn't exist in collection
         continue;
 
-      const int i = encode[term];
+      const int i = term_to_id[term];
 
       if (IDF[i] < 1) // Term is too frequent to matter
         continue;
@@ -374,8 +377,6 @@ namespace indexer {
     }
 
     const size_t query_term_count = query_ids.size();
-    if (query_term_count == 0)
-      return "Conjunto vazio";
     
     float denominator_right_sum = 0;
 
@@ -401,13 +402,6 @@ namespace indexer {
 
     for (const auto& doc : doc_info) {
       const int j = doc.first;
-
-      if (titles[j] == query) { // Base case: perfect match
-        score[j] = 2.f;
-        ranking.insert(j);
-        continue;
-      }
-      
       const float numerator = doc.second.numerator;
       const float denominator_left_sum = sqrt(doc.second.denominator_left_sum);
 
@@ -417,13 +411,25 @@ namespace indexer {
       }
     }
 
+    // ↓ First base case: perfect match
+    if (title_to_id.count(query)) {
+      const int j = title_to_id[query];
+      ranking.erase(j);
+      score[j] = 2.f; // Highest after disambiguation
+      ranking.insert(j);
+    }
+
     // ↓ Second base case: found disambiguation for this exact query
     if (disambiguation.count(query)) {
       const int disambiguation_id = disambiguation[query];
       ranking.erase(disambiguation_id);
-      score[disambiguation_id] = 3.f; // The highest
+      score[disambiguation_id] = 3.f; // Highest
       ranking.insert(disambiguation_id);
     }
+
+    // ↓ Third base case: no matches at all
+    if (ranking.empty())
+      return "Conjunto vazio";
 
     string ans;
     unordered_set<string> visited; // Try to make sure there are no duplicate results

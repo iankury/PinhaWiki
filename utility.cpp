@@ -48,7 +48,7 @@ namespace utility {
     return kPathPrefix + filename + ".txt";
   }
 
-  void PrintElapsedTime(const double& initial_time, bool write_to_log = false) {
+  void PrintElapsedTime(const double& initial_time, bool write_to_log) {
     double seconds = (double(clock()) - initial_time) / 1000.;
     int minutes = (int)seconds / 60;
     seconds -= minutes * 60.;

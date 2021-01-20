@@ -8,7 +8,7 @@ namespace utility {
   extern unordered_set<string> common_terms;
 
   string Path(const string& filename);
-  void PrintElapsedTime(const double& initial_time, bool write_to_log);
+  void PrintElapsedTime(const double& initial_time, bool write_to_log = false);
   bool ValidTitle(const string& title);
   bool AllAscii(const string& s);
   string NoParentheses(const string& s);
@@ -32,7 +32,7 @@ namespace preprocess {
 }
 
 namespace indexer {
-  extern unordered_map<string, int> encode;
+  extern unordered_map<string, int> term_to_id;
 
   void LoadTitles();
   void LoadOriginalTitles();

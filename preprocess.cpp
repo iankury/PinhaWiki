@@ -266,7 +266,7 @@ namespace preprocess {
     string s, ans;
     stringstream ss(line);
     while (getline(ss, s, ' ')) 
-      if (indexer::encode.count(s))
+      if (indexer::term_to_id.count(s))
         ans += s + " ";
     return ans;
   }
