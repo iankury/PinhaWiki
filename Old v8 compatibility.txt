@@ -1,0 +1,7 @@
+void Boilerplate(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::String::Utf8Value input(isolate, args[0]);
+  string output = HandleClientRequest(*input);
+  auto ans = v8::String::NewFromUtf8(isolate, output.c_str());
+  args.GetReturnValue().Set(ans);
+}

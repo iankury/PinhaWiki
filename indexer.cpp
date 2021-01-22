@@ -107,14 +107,17 @@ namespace indexer {
     M = utility::CountLines("terms");
     TF.resize(M);
     IDF.resize(M);
-    inverted_index.resize(N);
-    inverted_index_sizes.assign(N, 0);
+    inverted_index.resize(M);
+    inverted_index_sizes.assign(M, 0);
 
     ifstream ifs(utility::Path("terms"));
     string term;
     int id = -1;
-    while (ifs >> term >> TF[++id]) 
+    while (++id < M) {
+      if (!(ifs >> term >> TF[id]))
+        break;
       term_to_id[term] = id;
+    }
     ifs.close();
 
     BuildIDF();
@@ -171,7 +174,7 @@ namespace indexer {
     string line;
     int sz, j;
     float w;
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < M; i++) {
       getline(ifs, line);
       stringstream ss(line);
       ss >> sz;
@@ -194,7 +197,7 @@ namespace indexer {
     double initial_time = clock();
 
     ofstream ofs(utility::Path("index"));
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < M; i++) {
       const int sz = inverted_index_sizes[i];
       ofs << sz;
       for (int k = 0; k < sz; k++) {
@@ -216,7 +219,7 @@ namespace indexer {
       const size_t idx = title.find("(desambiguacao)");
       if (idx != string::npos) {
         string prefix = title.substr(0, idx);
-        while (!prefix.empty() && prefix.back() == '(' || prefix.back() == ' ')
+        while (!prefix.empty() && (prefix.back() == '(' || prefix.back() == ' '))
           prefix.pop_back();
         if (!prefix.empty())
           disambiguation[prefix] = i;
@@ -242,7 +245,7 @@ namespace indexer {
 
     string line, term;
 
-    for (int j = 0; getline(ifs, line); j++) { // For each document j
+    for (int j = 0; j < N && getline(ifs, line); j++) { // For each document j
       stringstream ss(line), sst(titles[j]);
 
       // ↓ Term Frequency for each term i in this document
@@ -278,6 +281,7 @@ namespace indexer {
       // ↓ Build weights for all terms for document j
       for (const pair<int, int>& p : document_TF) {
         const int i = p.first;
+        
         if (IDF[i] < 1) // Term is too frequent to matter
           continue;
 
@@ -297,7 +301,7 @@ namespace indexer {
       }
 
       // ↓ Consider only the top 50% heaviest terms for document j
-      sort(rbegin(w_and_id), rend(w_and_id));
+      sort(begin(w_and_id), end(w_and_id), greater<pair<float, int>>());
       for (size_t k = 0; k < w_and_id.size() / 2; k++) {
         const float weight = w_and_id[k].first;
         const int i = w_and_id[k].second;
@@ -310,10 +314,10 @@ namespace indexer {
     // ↓ Set inverted index sizes
     for (const auto& p : w) 
       inverted_index_sizes[p.first.first]++;
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < M; i++)
       inverted_index[i] = new IndexNode[inverted_index_sizes[i]];
 
-    vector<int> inverted_index_current_position(N);
+    vector<int> inverted_index_current_position(M);
 
     // ↓ Build the index
     for (const auto& p : w) {
@@ -376,8 +380,6 @@ namespace indexer {
       query_ids.insert(i);
     }
 
-    const size_t query_term_count = query_ids.size();
-    
     float denominator_right_sum = 0;
 
     // ↓ Precompute denominator_right_sum
@@ -392,7 +394,7 @@ namespace indexer {
       const int sz = inverted_index_sizes[i];
       for (int k = 0; k < sz; k++) {
         const int j = inverted_index[i][k].j;
-        const int w = inverted_index[i][k].w;
+        const float w = inverted_index[i][k].w;
 
         // ↓ Part of formula 2.10 on page 46 of the book
         doc_info[j].numerator += w * IDF[i]; // Assume wiq = IDF[i]

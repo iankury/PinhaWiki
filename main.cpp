@@ -5,7 +5,7 @@ particularly the formulas for computing TF-IDF weights and
 document-query similarity scores:
 
 BAEZA-YATES, Ricardo; RIBEIRO-NETO, Berthier.
-RecuperaÁ„o de InformaÁ„o: Conceitos e tecnologia das m·quinas de busca.
+Recupera√ß√£o de Informa√ß√£o: Conceitos e tecnologia das m√°quinas de busca.
 2. ed. Porto Alegre: Bookman, 2013. 590 p. ISBN 978-85-8260-049-8. E-book.
 */
 
