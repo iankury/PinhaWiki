@@ -37,9 +37,7 @@ namespace indexer {
 
   unordered_map<string, int> disambiguation; // Maps disambiguation title to title id
 
-  vector<IndexNode*> inverted_index;
-
-  vector<int> inverted_index_sizes;
+  vector<vector<IndexNode>> inverted_index;
 
   // ↓ Resized and assigned in LoadTerms
   vector<int> TF; // Term Frequency of term i in collection (not the local TF)
@@ -108,7 +106,6 @@ namespace indexer {
     TF.resize(M);
     IDF.resize(M);
     inverted_index.resize(M);
-    inverted_index_sizes.assign(M, 0);
 
     ifstream ifs(utility::Path("terms"));
     string term;
@@ -178,9 +175,7 @@ namespace indexer {
       getline(ifs, line);
       stringstream ss(line);
       ss >> sz;
-      inverted_index_sizes[i] = sz;
-
-      inverted_index[i] = new IndexNode[sz];
+      inverted_index[i].resize(sz);
 
       for (int k = 0; k < sz; k++) {
         ss >> j >> w;
@@ -198,9 +193,9 @@ namespace indexer {
 
     ofstream ofs(utility::Path("index"));
     for (int i = 0; i < M; i++) {
-      const int sz = inverted_index_sizes[i];
+      const size_t sz = inverted_index[i].size();
       ofs << sz;
-      for (int k = 0; k < sz; k++) {
+      for (size_t k = 0; k < sz; k++) {
         ofs << " " << inverted_index[i][k].j << " ";
         ofs << fixed << setprecision(3) << inverted_index[i][k].w;
       }
@@ -312,10 +307,11 @@ namespace indexer {
     ifs.close();
 
     // ↓ Set inverted index sizes
+    vector<int> inverted_index_sizes(M);
     for (const auto& p : w) 
       inverted_index_sizes[p.first.first]++;
     for (int i = 0; i < M; i++)
-      inverted_index[i] = new IndexNode[inverted_index_sizes[i]];
+      inverted_index[i].resize(inverted_index_sizes[i]);
 
     vector<int> inverted_index_current_position(M);
 
@@ -373,7 +369,7 @@ namespace indexer {
         continue;
 
       const int i = term_to_id[term];
-
+      
       if (IDF[i] < 1) // Term is too frequent to matter
         continue;
 
@@ -391,14 +387,10 @@ namespace indexer {
 
     // ↓ Get relevant document info (only for documents connected to query terms)
     for (int i : query_ids) {
-      const int sz = inverted_index_sizes[i];
-      for (int k = 0; k < sz; k++) {
-        const int j = inverted_index[i][k].j;
-        const float w = inverted_index[i][k].w;
-
+      for (const auto& node : inverted_index[i]) {
         // ↓ Part of formula 2.10 on page 46 of the book
-        doc_info[j].numerator += w * IDF[i]; // Assume wiq = IDF[i]
-        doc_info[j].denominator_left_sum += w * w;
+        doc_info[node.j].numerator += node.w * IDF[i]; // Assume wiq = IDF[i]
+        doc_info[node.j].denominator_left_sum += node.w * node.w;
       }
     }
 
