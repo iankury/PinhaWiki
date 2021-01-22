@@ -79,7 +79,7 @@ namespace indexer {
     ifstream ifs(utility::Path("original_titles"));
     string s;
     while (getline(ifs, s))
-      original_titles.push_back(s);
+      original_titles.push_back(utility::RemoveTrailingTrash(s));
     ifs.close();
 
     utility::PrintElapsedTime(initial_time);
@@ -91,7 +91,7 @@ namespace indexer {
     ifstream ifs(utility::Path("redirections"));
     string alias, target_title;
     while (getline(ifs, alias) && getline(ifs, target_title)) 
-      redirections[alias] = target_title;
+      redirections[utility::RemoveTrailingTrash(alias)] = utility::RemoveTrailingTrash(target_title);
     ifs.close();
 
     utility::PrintElapsedTime(initial_time);
