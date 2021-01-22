@@ -104,4 +104,16 @@ namespace utility {
       ++ans;
     return ans;
   }
+
+  string RemoveTrailingTrash(string s) {
+    while (!s.empty() && 
+      (
+        isspace(s.back()) || 
+        s.back() == '\n'  || 
+        s.back() == '\r'  || 
+        s.back() == '\t'
+      ))
+      s.pop_back();
+    return s;
+  }
 }

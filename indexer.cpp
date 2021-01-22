@@ -64,10 +64,8 @@ namespace indexer {
 
     ifstream ifs(utility::Path("titles"));
     string s;
-    while (getline(ifs, s)) {
-      title_to_id[s] = titles.size();
-      titles.push_back(s);
-    }
+    while (getline(ifs, s)) 
+      titles.push_back(utility::RemoveTrailingTrash(s));
     ifs.close();
 
     N = titles.size();
@@ -148,7 +146,7 @@ namespace indexer {
             unique_terms[processed_term]++;
         }
     }
-
+    
     // ↓ Get rid of extreme terms
     for (auto& term : unique_terms)
       if (term.second < 4 || term.second > 99999)
@@ -182,7 +180,7 @@ namespace indexer {
         inverted_index[i][k] = IndexNode{ j, w };
       }
     }
-
+    
     ifs.close();
 
     utility::PrintElapsedTime(initial_time);
@@ -221,6 +219,13 @@ namespace indexer {
       }
     }
 
+    utility::PrintElapsedTime(initial_time);
+  }
+
+  void BuildTitleToId() {
+    double initial_time = clock();
+    for (int i = 0; i < N; i++) 
+      title_to_id[titles[i]] = i;
     utility::PrintElapsedTime(initial_time);
   }
 
@@ -334,19 +339,31 @@ namespace indexer {
   //  =============== ENGINE ===============
 
   void LoadEngine() {
-    cout << "Loading titles.txt\n";
+    ofstream ofs(utility::Path("log"), ios_base::app);
+
+    ofs << "Loading titles.txt\n";
     LoadTitles();
-    cout << "Loading original_titles.txt\n";
+    ofs << "Loaded " << N << " titles.\n";
+    ofs << "Loading original_titles.txt\n";
     LoadOriginalTitles();
-    cout << "Loading terms.txt\n";
+    ofs << "Loading terms.txt\n";
     LoadTerms();
-    cout << "Loading index.txt\n";
+    ofs << "Loaded " << M << " terms.\n";
+    ofs << "Loading index.txt\n";
     LoadIndex();
-    cout << "Building disambiguation\n";
+    ofs << "Building disambiguation\n";
     BuildDisambiguation();
+    ofs << "Building title_to_id\n";
+    BuildTitleToId();
+    if (title_to_id.count("fortaleza"))
+      ofs << "Passed perfect match test\n";
+    else 
+      ofs << "Failed perfect match test\n";
+
+    ofs.close();
   }
 
-  string Query(const string& query) {
+  string Query(string query) {
     vector<float> score(N); // Similarity between each document and the query
 
     unordered_map<int, DocumentNode> doc_info;
@@ -405,6 +422,8 @@ namespace indexer {
       }
     }
 
+    string ans;
+
     // ↓ First base case: perfect match
     if (title_to_id.count(query)) {
       const int j = title_to_id[query];
@@ -415,17 +434,17 @@ namespace indexer {
 
     // ↓ Second base case: found disambiguation for this exact query
     if (disambiguation.count(query)) {
-      const int disambiguation_id = disambiguation[query];
-      ranking.erase(disambiguation_id);
-      score[disambiguation_id] = 3.f; // Highest
-      ranking.insert(disambiguation_id);
+      const int j = disambiguation[query];
+      ranking.erase(j);
+      score[j] = 3.f; // Highest
+      ranking.insert(j);
     }
 
     // ↓ Third base case: no matches at all
     if (ranking.empty())
       return "Conjunto vazio";
 
-    string ans;
+    
     unordered_set<string> visited; // Try to make sure there are no duplicate results
 
     for (int j : ranking) {

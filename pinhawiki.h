@@ -13,6 +13,7 @@ namespace utility {
   bool AllAscii(const string& s);
   string NoParentheses(const string& s);
   size_t CountLines(const string& filename);
+  string RemoveTrailingTrash(string s);
 }
 
 namespace preprocess {
@@ -46,7 +47,7 @@ namespace indexer {
 
   // ↓ Engine
   void LoadEngine();
-  string Query(const string& query);
+  string Query(string query);
 }
 
 namespace command_line_interface {
