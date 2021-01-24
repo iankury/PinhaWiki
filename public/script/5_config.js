@@ -3,10 +3,6 @@ const config = {
   render: { transparent: true },
   width: vw(1),
   height: vh(1),
-  scale: {
-    mode: Phaser.Scale.RESIZE,
-    autoCenter: Phaser.Scale.CENTER_BOTH
-  },
   physics: {
     default: 'arcade',
     arcade: {

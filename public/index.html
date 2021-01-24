@@ -14,16 +14,18 @@
   <input id="search_box" type="text" />
   <div id="results"></div>
 
-  <script src="script/jquery.js"></script>
-  <script src="script/phaser.js"></script>
-  <script src="script/start.js"></script>
-  <script src="script/preload.js"></script>
-  <script src="script/create.js"></script>
-  <script src="script/update.js"></script>
-  <script src="script/config.js"></script>
-  <script src="script/deploy.js"></script>
-  <script src="script/main.js"></script>
-  <script src="script/listeners.js"></script>
+  <!-- Libraries -->
+  <script src="script/lib/jquery.js"></script>
+  <script src="script/lib/phaser.js"></script>
+
+  <!-- Common to both portrait and landscape modes -->
+  <script src="script/1_common.js"></script>
+
+  <script src="script/2_preload.js"></script>
+  <script src="script/3_create.js"></script>
+  <script src="script/4_update.js"></script>
+  <script src="script/5_config.js"></script>
+  <script src="script/6_main.js"></script>
 
 </body>
 </html>
