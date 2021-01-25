@@ -29,6 +29,7 @@ namespace preprocess {
   void DeleteCommon(const string& filename);
   void DeleteLong(const string& filename);
   void DeleteExtremeFreq(const string& filename);
+  void Redirect(const string& filename);
   void FullPreprocessing();
 }
 
@@ -37,11 +38,12 @@ namespace indexer {
 
   void LoadTitles();
   void LoadOriginalTitles();
-  void LoadRedirections();
   void LoadTerms();
   void SaveTerms();
   void LoadIndex();
   void SaveIndex();
+  void LoadNorms();
+  void SaveNorms();
   void BuildDisambiguation();
   void BuildIndex();
 

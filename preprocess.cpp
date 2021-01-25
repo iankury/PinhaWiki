@@ -90,7 +90,7 @@ namespace preprocess {
       }
       else if (s.find("<text") != string::npos)
         skip = 0;
-      else if (s.find("</text") != string::npos)
+      else if (s.find("</text") != string::npos || s.find("{{Refer") != string::npos)
         skip = 1;
       else if (!skip)
         cur_page.push_back(s);
@@ -285,6 +285,38 @@ namespace preprocess {
     utility::PrintElapsedTime(initial_time);
   }
 
+  void Redirect(const string& filename) {
+    double initial_time = clock();
+
+    unordered_map<string, string> redirections;
+
+    ifstream ifs_redir(utility::Path("redirections"));
+    string alias, target_title;
+    while (getline(ifs_redir, alias) && getline(ifs_redir, target_title))
+      if (alias != target_title)
+        redirections[alias] = target_title;
+    ifs_redir.close();
+
+    ifstream ifs(filename);
+    ofstream ofs(utility::Path("redirected_titles"));
+    string s;
+    while (getline(ifs, s)) {
+      int sanity = 123456;
+      while (redirections.count(s) && --sanity) 
+        s = redirections[s];
+      if (sanity < 1) {
+        cout << "Eternal redirection detected.\n";
+        cout << s << " to " << redirections[s] << "\n";
+        exit(0);
+      }
+      ofs << s << "\n";
+    }
+    ifs.close();
+    ofs.close();
+
+    utility::PrintElapsedTime(initial_time);
+  }
+
   void FullPreprocessing() {
     double initial_time = clock();
 
@@ -295,7 +327,7 @@ namespace preprocess {
     WriteRedirections(utility::Path("nows"));
 
     cout << "Removing all tags except page and title\n";
-    cout << "  and all entries with invalid titles.\n";
+    cout << "  and refs and all entries with invalid titles.\n";
     RemoveTrash(utility::Path("nows"));
     remove((utility::Path("nows")).c_str());
 

@@ -15,12 +15,20 @@ function DisplayResponse(res) {
   $('#results').append(
     $(`<p>Resultados da consulta "${query}":</p>`)
   )
-  res.split(SEPARATOR).forEach(x => {
-    const link = WIKI_URL + encodeURI(x)
-    $('#results').append(
-      $(`<a href="${link}" target="_blank">${x}</a>`)
-    )
+  res.split(SEPARATOR).forEach((x, i) => {
+    if (i % 2) { // Score
+      $('#results').append(
+        $(`<p>Vector space score was ${x}</p>`)
+      )
+    }
+    else { // Article name
+      const link = WIKI_URL + encodeURI(x)
+      $('#results').append(
+        $(`<a href="${link}" target="_blank">${x}</a>`)
+      )
+    }
   }) 
+  $('#results').scrollTop(0)
 }
 
 function SendQuery(raw_data) {

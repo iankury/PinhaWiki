@@ -11,8 +11,10 @@ nows.txt
 original_titles.txt
 raw.txt
 redirections.txt
+redirected_titles.txt
 terms.txt
 titles.txt
+vector_norms.txt
 a.exe - Shortcut.lnk
 PinhaWikiC.sln
 PinhaWikiC.vcxproj

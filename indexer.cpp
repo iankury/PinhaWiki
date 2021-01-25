@@ -13,11 +13,6 @@ namespace indexer {
     float w;
   };
 
-  struct DocumentNode {
-    float numerator, denominator_left_sum;
-    DocumentNode() : numerator(0), denominator_left_sum(0) {}
-  };
-
   // ↓ Number of documents in the collection (assigned in LoadTitles)
   size_t N; 
 
@@ -38,6 +33,8 @@ namespace indexer {
   unordered_map<string, int> disambiguation; // Maps disambiguation title to title id
 
   vector<vector<IndexNode>> inverted_index;
+
+  vector<float> vector_norms;
 
   // ↓ Resized and assigned in LoadTerms
   vector<int> TF; // Term Frequency of term i in collection (not the local TF)
@@ -60,8 +57,6 @@ namespace indexer {
   }
 
   void LoadTitles() {
-    double initial_time = clock();
-
     ifstream ifs(utility::Path("titles"));
     string s;
     while (getline(ifs, s)) 
@@ -69,37 +64,25 @@ namespace indexer {
     ifs.close();
 
     N = titles.size();
-
-    utility::PrintElapsedTime(initial_time);
   }
 
   void LoadOriginalTitles() {
-    double initial_time = clock();
-
     ifstream ifs(utility::Path("original_titles"));
     string s;
     while (getline(ifs, s))
       original_titles.push_back(utility::RemoveTrailingTrash(s));
     ifs.close();
-
-    utility::PrintElapsedTime(initial_time);
   }
 
   void LoadRedirections() {
-    double initial_time = clock();
-
     ifstream ifs(utility::Path("redirections"));
     string alias, target_title;
-    while (getline(ifs, alias) && getline(ifs, target_title)) 
+    while (getline(ifs, alias) && getline(ifs, target_title))
       redirections[utility::RemoveTrailingTrash(alias)] = utility::RemoveTrailingTrash(target_title);
     ifs.close();
-
-    utility::PrintElapsedTime(initial_time);
   }
 
   void LoadTerms() {
-    double initial_time = clock();
-
     M = utility::CountLines("terms");
     TF.resize(M);
     IDF.resize(M);
@@ -116,15 +99,11 @@ namespace indexer {
     ifs.close();
 
     BuildIDF();
-
-    utility::PrintElapsedTime(initial_time);
   }
 
   void SaveTerms() {
     LoadTitles();
     cout << "Loaded " << N << " titles.\n";
-
-    double initial_time = clock();
 
     ifstream ifs(utility::Path("articles"));
     string article, term;
@@ -157,13 +136,9 @@ namespace indexer {
       if (term.second > 0)
         ofs << term.first << " " << term.second << "\n";
     ofs.close();
-
-    utility::PrintElapsedTime(initial_time);
   }
 
   void LoadIndex() {
-    double initial_time = clock();
-
     ifstream ifs(utility::Path("index"));
 
     string line;
@@ -182,13 +157,9 @@ namespace indexer {
     }
     
     ifs.close();
-
-    utility::PrintElapsedTime(initial_time);
   }
 
   void SaveIndex() {
-    double initial_time = clock();
-
     ofstream ofs(utility::Path("index"));
     for (int i = 0; i < M; i++) {
       const size_t sz = inverted_index[i].size();
@@ -200,13 +171,26 @@ namespace indexer {
       ofs << "\n";
     }
     ofs.close();
+  }
 
-    utility::PrintElapsedTime(initial_time);
+  void LoadNorms() {
+    ifstream ifs(utility::Path("vector_norms"));
+
+    vector_norms.resize(N);
+    for (int i = 0; i < N; i++)
+      ifs >> vector_norms[i];
+
+    ifs.close();
+  }
+
+  void SaveNorms() {
+    ofstream ofs(utility::Path("vector_norms"));
+    for (int i = 0; i < N; i++)
+      ofs << fixed << setprecision(3) << vector_norms[i] << "\n";
+    ofs.close();
   }
 
   void BuildDisambiguation() {
-    double initial_time = clock();
-
     for (int i = 0; i < N; i++) {
       const string& title = titles[i];
       const size_t idx = title.find("(desambiguacao)");
@@ -218,15 +202,11 @@ namespace indexer {
           disambiguation[prefix] = i;
       }
     }
-
-    utility::PrintElapsedTime(initial_time);
   }
 
   void BuildTitleToId() {
-    double initial_time = clock();
     for (int i = 0; i < N; i++) 
       title_to_id[titles[i]] = i;
-    utility::PrintElapsedTime(initial_time);
   }
 
   void BuildIndex() {
@@ -235,8 +215,6 @@ namespace indexer {
 
     LoadTerms();
     cout << "Loaded " << M << " terms.\n";
-
-    double initial_time = clock();
 
     // ↓ For term i, document j has weight w[{ i, j }]
     unordered_map<pair<int, int>, float, PairHash> w;
@@ -320,7 +298,9 @@ namespace indexer {
 
     vector<int> inverted_index_current_position(M);
 
-    // ↓ Build the index
+
+    // ↓ Build the index and the vector norms
+    vector_norms.assign(N, 0);
     for (const auto& p : w) {
       const int i = p.first.first;
       const int j = p.first.second;
@@ -330,9 +310,11 @@ namespace indexer {
       inverted_index[i][idx] = IndexNode{ j, weight };
 
       ++inverted_index_current_position[i];
-    }
 
-    utility::PrintElapsedTime(initial_time);
+      vector_norms[j] += weight * weight;
+    }
+    for (float& norm : vector_norms)
+      norm = sqrt(norm);
   }
 
 
@@ -346,27 +328,38 @@ namespace indexer {
     ofs << "Loaded " << N << " titles.\n";
     ofs << "Loading original_titles.txt\n";
     LoadOriginalTitles();
+    ofs << "Loading redirections.txt\n";
+    LoadRedirections();
     ofs << "Loading terms.txt\n";
     LoadTerms();
     ofs << "Loaded " << M << " terms.\n";
     ofs << "Loading index.txt\n";
     LoadIndex();
+    ofs << "Loading norms.txt\n";
+    LoadNorms();
     ofs << "Building disambiguation\n";
     BuildDisambiguation();
     ofs << "Building title_to_id\n";
     BuildTitleToId();
-    if (title_to_id.count("fortaleza"))
-      ofs << "Passed perfect match test\n";
-    else 
-      ofs << "Failed perfect match test\n";
 
     ofs.close();
   }
 
   string Query(string query) {
-    vector<float> score(N); // Similarity between each document and the query
+    // ↓ First base case: there exists a redirection for this exact query
+    if (title_to_id.count(query)) {
+      const int j = title_to_id[query];
+      if (redirections.count(original_titles[j])) {
+        string redirected_title = original_titles[j];
+        while (redirections.count(redirected_title))
+          redirected_title = redirections[redirected_title];
 
-    unordered_map<int, DocumentNode> doc_info;
+        return Query(preprocess::LowerAsciiSingleLine(redirected_title));
+      }
+    }
+
+    unordered_map<int, float> score; // Similarity between each document and the query
+    unordered_map<int, float> numerators;
 
     auto comp = [&](int px, int qx) { // Heaviest first
       if (score[px] == score[qx])
@@ -393,42 +386,16 @@ namespace indexer {
       query_ids.insert(i);
     }
 
-    float denominator_right_sum = 0;
+    // ↓ Get info from relevant documents only (connected to query terms)
+    for (int i : query_ids) 
+      for (const auto& node : inverted_index[i]) 
+        numerators[node.j] += node.w;
 
-    // ↓ Precompute denominator_right_sum
-    for (int i : query_ids) {
-      const float wiq = IDF[i];
-      denominator_right_sum += wiq * wiq;
-    }
-    denominator_right_sum = sqrt(denominator_right_sum);
+    for (const auto& doc_info : numerators) {
+      const int j = doc_info.first;
+      const float numerator = doc_info.second;
 
-    // ↓ Get relevant document info (only for documents connected to query terms)
-    for (int i : query_ids) {
-      for (const auto& node : inverted_index[i]) {
-        // ↓ Part of formula 2.10 on page 46 of the book
-        doc_info[node.j].numerator += node.w * IDF[i]; // Assume wiq = IDF[i]
-        doc_info[node.j].denominator_left_sum += node.w * node.w;
-      }
-    }
-
-    for (const auto& doc : doc_info) {
-      const int j = doc.first;
-      const float numerator = doc.second.numerator;
-      const float denominator_left_sum = sqrt(doc.second.denominator_left_sum);
-
-      if (numerator > 0) {
-        score[j] = numerator / (denominator_left_sum * denominator_right_sum);
-        ranking.insert(j);
-      }
-    }
-
-    string ans;
-
-    // ↓ First base case: perfect match
-    if (title_to_id.count(query)) {
-      const int j = title_to_id[query];
-      ranking.erase(j);
-      score[j] = 2.f; // Highest after disambiguation
+      score[j] = numerator / vector_norms[j];
       ranking.insert(j);
     }
 
@@ -436,37 +403,45 @@ namespace indexer {
     if (disambiguation.count(query)) {
       const int j = disambiguation[query];
       ranking.erase(j);
-      score[j] = 3.f; // Highest
+      score[j] = 999.f; // Highest
       ranking.insert(j);
     }
 
-    // ↓ Third base case: no matches at all
-    if (ranking.empty())
-      return "Conjunto vazio";
+    // ↓ Third base case: perfect match, but no disambiguation
+    else if (title_to_id.count(query)) {
+      const int j = title_to_id[query];
+      ranking.erase(j);
+      score[j] = 999.f;
+      ranking.insert(j);
+    }
 
+    // ↓ Fourth base case: no matches at all
+    else if (ranking.empty())
+      return "Conjunto vazio" + string{ char{ 30 } } + "0";
     
     unordered_set<string> visited; // Try to make sure there are no duplicate results
 
+    string ans;
     for (int j : ranking) {
-      string cur_title = original_titles[j];
-
-      // ↓ Redirect until final destination
-      while (redirections.count(cur_title))
-        cur_title = redirections[cur_title];
-
       // ↓ Handle duplicates
-      const string processed_title = preprocess::LowerAsciiSingleLine(cur_title);
-      if (visited.count(processed_title))
+      const string processed_title = preprocess::LowerAsciiSingleLine(original_titles[j]);
+      if (visited.count(processed_title)) 
         continue;
       visited.insert(processed_title);
 
-      ans += cur_title;
+      // ↓ Send the article names to the frontend
+      ans += original_titles[j];
       ans.push_back(30); // Separator
+      
+      // ↓ Send the scores to the frontend
+      ans += to_string((int)( 1000.f * score[j] + .5f ));
+      ans.push_back(30);
 
-      if (visited.size() >= 50) // Keep only top results
+      if (visited.size() >= 100) // Keep only top results
         break;
     }
 
+    ans.pop_back();
     return ans;
   }
 }

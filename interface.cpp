@@ -10,7 +10,7 @@ namespace command_line_interface {
     cout << "nows <path> -- strips leading/trailing whitespace\n";
     cout << "write_redirections <path> -- writes map of alias to target title to file\n";
     cout << "notrash <path> -- removes entries with trash titles, leaves only\n";
-    cout << "  page tags, and inside them only title tags and text (content)\n";
+    cout << "  page tags, and inside them only title tags and text (content), no refs\n";
     cout << "split <path> -- writes titles to one file, articles to another\n";
     cout << "lower_ascii <path> -- makes each char lowercase and ASCII,\n";
     cout << "  but will keep non-Portuguese non-ASCII chars\n";
@@ -19,6 +19,7 @@ namespace command_line_interface {
     cout << "nolong <path> -- deletes single-letter words and words of 15+ letters\n";
     cout << "noextreme <path> -- deletes terms with extreme frequencies";
     cout << "  from articles (requires terms.txt)\n";
+    cout << "redirect <path> -- writes final targets for each original title\n";
     cout << "preprocess -- does all preprocessing sequentially\n";
     cout << "save_terms -- writes all unique terms (requires titles.txt)\n";
     cout << "  along with their total frequency in the collection\n";
@@ -26,6 +27,7 @@ namespace command_line_interface {
     cout << "load_titles -- loads document titles\n";
     cout << "build_index -- builds an index (requires titles.txt and terms.txt)\n";
     cout << "save_index -- saves the weights to index.txt as i j w lines\n";
+    cout << "save_norms -- saves vector norms for all documents\n";
     cout << "load_engine -- loads whole engine (titles, terms, index)\n";
   }
 
@@ -60,6 +62,8 @@ namespace command_line_interface {
       indexer::LoadTerms();
     else if (command == "noextreme")
       preprocess::DeleteExtremeFreq(filename);
+    else if (command == "redirect")
+      preprocess::Redirect(filename);
     else if (command == "preprocess")
       preprocess::FullPreprocessing();
     else if (command == "load_titles")
@@ -68,6 +72,8 @@ namespace command_line_interface {
       indexer::BuildIndex();
     else if (command == "save_index")
       indexer::SaveIndex();
+    else if (command == "save_norms")
+      indexer::SaveNorms();
     else if (command == "load_engine")
       indexer::LoadEngine();
     else {
@@ -88,6 +94,7 @@ namespace command_line_interface {
       getline(ss, filename);
 
       HandleCommand(command, utility::Path(filename));
+      cout << "Finished command " << command << "\n";
     }
   }
 }
