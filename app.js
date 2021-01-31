@@ -15,7 +15,6 @@ app.use(express.static('public'))
 
 app.listen(process.env.PORT || 3000, () => {
   console.log('PinhaWiki stirs...')
-  LoadAddon()
 })
 
 function LoadAddon() {
@@ -35,6 +34,11 @@ function LoadAddon() {
     }
   }
 }
+
+app.post('/open', (req, res) => {
+  LoadAddon()
+  res.sendStatus(201)
+})
 
 app.get('/q/:data', (req, res) => {
   if (req.params.data.length > 500) {

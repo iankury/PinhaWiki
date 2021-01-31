@@ -1,4 +1,6 @@
-$(document).ready(() => pinhawiki = new Phaser.Game(config))
+$(document).ready(() => {
+  pinhawiki = new Phaser.Game(config)
+})
 
 let initial_time
 
@@ -6,6 +8,7 @@ function Loaded() {
   $('#search_box').on('keydown', Keydown)
   $('#search_box').show()
   $('#search_box').focus()
+  $.post('/open')
 }
 
 function ClearSearchbox() {
