@@ -317,6 +317,51 @@ namespace preprocess {
     utility::PrintElapsedTime(initial_time);
   }
 
+  void SplitIndex() {
+    double initial_time = clock();
+
+    ifstream ifs(utility::Path("index"));
+    
+    vector<int> first_term_id_in_file{ 0 };
+    int current_size = 0, file_id = 0, term_id = 0;
+    vector<string> lines;
+    string line;
+    while (getline(ifs, line)) {
+      current_size += line.length();
+      lines.push_back(line);
+
+      if (current_size > 1000000) {
+        current_size = 0;
+        ofstream ofs(utility::Path("index/" + to_string(file_id)));
+        for (const string& s : lines)
+          ofs << s << "\n";
+        ofs.close();
+        lines.clear();
+
+        ++file_id;
+        first_term_id_in_file.push_back(term_id + 1);
+      }
+
+      ++term_id;
+    }
+
+    ifs.close();
+
+    if (!lines.empty()) {
+      ofstream ofs(utility::Path("index/" + to_string(file_id)));
+      for (const string& s : lines)
+        ofs << s << "\n";
+      ofs.close();
+    }
+
+    ofstream ofs(utility::Path("first_term_id_in_file"));
+    for (int x : first_term_id_in_file)
+      ofs << x << "\n";
+    ofs.close();
+
+    utility::PrintElapsedTime(initial_time);
+  }
+
   void FullPreprocessing() {
     double initial_time = clock();
 

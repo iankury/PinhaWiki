@@ -2,6 +2,7 @@
 
 namespace utility {
   const string kPathPrefix = "C:\\Users\\Administrator\\repos\\PinhaWikiC\\";
+  const char kSeparator{ 30 };
 
   unordered_map<int, int> compressed_chars{
     { 128, 65 }, { 136, 69 }, { 140, 73 }, { 146, 79 }, { 153, 85 }, { 127, 65 },
@@ -48,21 +49,13 @@ namespace utility {
     return kPathPrefix + filename + ".txt";
   }
 
-  void PrintElapsedTime(const double& initial_time, bool write_to_log) {
+  void PrintElapsedTime(const double& initial_time) {
     double seconds = (double(clock()) - initial_time) / 1000.;
     int minutes = (int)seconds / 60;
     seconds -= minutes * 60.;
 
-    if (write_to_log) {
-      ofstream ofs(Path("log"), ios_base::app);
-      ofs << "==>" << right << setw(3) << minutes << " min";
-      ofs << right << setw(7) << fixed << setprecision(3) << seconds << " s\n";
-      ofs.close();
-    }
-    else {
-      cout << "==>" << right << setw(3) << minutes << " min";
-      cout << right << setw(7) << fixed << setprecision(3) << seconds << " s\n";
-    }
+    cout << "==>" << right << setw(3) << minutes << " min";
+    cout << right << setw(7) << fixed << setprecision(3) << seconds << " s\n";
   }
 
   bool ValidTitle(const string& title) {

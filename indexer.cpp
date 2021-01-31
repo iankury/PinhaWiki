@@ -34,6 +34,8 @@ namespace indexer {
 
   vector<float> vector_norms;
 
+  vector<int> first_id_in_file;
+
   // ↓ Resized and assigned in LoadTerms
   vector<int> TF; // Term Frequency of term i in collection (not the local TF)
 
@@ -84,7 +86,6 @@ namespace indexer {
     M = utility::CountLines("terms");
     TF.resize(M);
     IDF.resize(M);
-    inverted_index.resize(M);
 
     ifstream ifs(utility::Path("terms"));
     string term;
@@ -139,6 +140,7 @@ namespace indexer {
   void LoadIndex() {
     ifstream ifs(utility::Path("index"));
 
+    inverted_index.resize(M);
     string line;
     int sz, j;
     float w;
@@ -164,7 +166,7 @@ namespace indexer {
       ofs << sz;
       for (size_t k = 0; k < sz; k++) {
         ofs << " " << inverted_index[i][k].j << " ";
-        ofs << fixed << setprecision(3) << inverted_index[i][k].w;
+        ofs << fixed << setprecision(2) << inverted_index[i][k].w;
       }
       ofs << "\n";
     }
@@ -186,6 +188,17 @@ namespace indexer {
     for (int i = 0; i < N; i++)
       ofs << fixed << setprecision(3) << vector_norms[i] << "\n";
     ofs.close();
+  }
+
+  void LoadFirstIdInFile() {
+    ifstream ifs(utility::Path("first_term_id_in_file"));
+
+    int x;
+    while (ifs >> x)
+      first_id_in_file.push_back(x);
+    first_id_in_file.push_back(INT32_MAX);
+
+    ifs.close();
   }
 
   void BuildTitleToId() {
@@ -273,6 +286,8 @@ namespace indexer {
     
     ifs.close();
 
+    inverted_index.resize(M);
+
     // ↓ Set inverted index sizes
     vector<int> inverted_index_sizes(M);
     for (const auto& p : w) 
@@ -306,25 +321,50 @@ namespace indexer {
 
   void LoadEngine() {
     ofstream ofs(utility::Path("log"), ios_base::app);
-
+    ofs << "\n\n ======= STARTED LOADING ENGINE\n\n";
     ofs << "Loading titles.txt\n";
     LoadTitles();
-    ofs << "Loaded " << N << " titles.\n";
+    ofs << "Loaded " << N << " titles\n";
     ofs << "Loading original_titles.txt\n";
     LoadOriginalTitles();
     ofs << "Loading redirections.txt\n";
     LoadRedirections();
     ofs << "Loading terms.txt\n";
     LoadTerms();
-    ofs << "Loaded " << M << " terms.\n";
-    ofs << "Loading index.txt\n";
-    LoadIndex();
+    ofs << "Loaded " << M << " terms\n";
     ofs << "Loading norms.txt\n";
     LoadNorms();
     ofs << "Building title_to_id\n";
     BuildTitleToId();
-
+    ofs << "Loading first_term_id_in_file\n";
+    LoadFirstIdInFile();
+    ofs << "Loaded first_term_id_in_file for ";
+    ofs << int(first_id_in_file.size()) - 1 << " files\n";
+    ofs << "\n ======= FINISHED LOADING ENGINE\n";
     ofs.close();
+  }
+
+  vector<IndexNode> InvertedIndex(int term_id) {
+    vector<IndexNode> ans;
+
+    auto ub = upper_bound(first_id_in_file.begin(), first_id_in_file.end(), term_id);
+    const int file_id = ub - first_id_in_file.begin() - 1;
+
+    ifstream ifs(utility::Path("index/" + to_string(file_id)));
+    string s;
+    for (int i = 0; i <= term_id - first_id_in_file[file_id]; i++)
+      getline(ifs, s);
+
+    size_t sz;
+    stringstream ss(s);
+    ss >> sz;
+
+    for (int i = 0; i < sz; i++) {
+      ans.push_back(IndexNode());
+      ss >> ans.back().j >> ans.back().w;
+    }
+
+    return ans;
   }
 
   string Query(string query) {
@@ -370,7 +410,7 @@ namespace indexer {
 
     // ↓ Get info from relevant documents only (connected to query terms)
     for (int i : query_ids) 
-      for (const auto& node : inverted_index[i]) 
+      for (const auto& node : InvertedIndex(i))
         numerators[node.j] += node.w;
 
     for (const auto& doc_info : numerators) {
@@ -391,7 +431,7 @@ namespace indexer {
 
     // ↓ Third base case: no matches at all
     else if (ranking.empty())
-      return "Conjunto vazio" + string{ char{ 30 } } + "0";
+      return "Conjunto vazio" + string{ utility::kSeparator } + "0";
     
     unordered_set<string> visited; // Try to make sure there are no duplicate results
 
@@ -405,11 +445,11 @@ namespace indexer {
 
       // ↓ Send the article names to the frontend
       ans += original_titles[j];
-      ans.push_back(30); // Separator
+      ans.push_back(utility::kSeparator);
       
       // ↓ Send the scores to the frontend
-      ans += to_string((int)( 1000.f * score[j] + .5f ));
-      ans.push_back(30);
+      ans += to_string((int)( 100.f * score[j] + .5f ));
+      ans.push_back(utility::kSeparator);
 
       if (visited.size() >= 100) // Keep only top results
         break;

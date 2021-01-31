@@ -3,12 +3,13 @@ using namespace std;
 
 namespace utility {
   extern const string kPathPrefix;
+  extern const char kSeparator;
   extern unordered_map<int, int> compressed_chars;
   extern vector<string> invalid_substrings;
   extern unordered_set<string> common_terms;
 
   string Path(const string& filename);
-  void PrintElapsedTime(const double& initial_time, bool write_to_log = false);
+  void PrintElapsedTime(const double& initial_time);
   bool ValidTitle(const string& title);
   bool AllAscii(const string& s);
   string NoParentheses(const string& s);
@@ -30,6 +31,7 @@ namespace preprocess {
   void DeleteLong(const string& filename);
   void DeleteExtremeFreq(const string& filename);
   void Redirect(const string& filename);
+  void SplitIndex();
   void FullPreprocessing();
 }
 

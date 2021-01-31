@@ -1,5 +1,7 @@
 $(document).ready(() => pinhawiki = new Phaser.Game(config))
 
+let initial_time
+
 function Loaded() {
   $('#search_box').on('keydown', Keydown)
   $('#search_box').show()
@@ -18,7 +20,8 @@ function DisplayResponse(res) {
   res.split(SEPARATOR).forEach((x, i) => {
     if (i % 2) { // Score
       $('#results').append(
-        $(`<p>Vector space score was ${x}</p>`)
+        (x == '99000') ? $(`<p>Perfect match</p>`)
+        : $(`<p>Vector space score was ${x}</p>`)
       )
     }
     else { // Article name
@@ -29,6 +32,10 @@ function DisplayResponse(res) {
     }
   }) 
   $('#results').scrollTop(0)
+
+  delta_time = new Date() - initial_time
+
+  console.log(`Query time: ${delta_time}`)
 }
 
 function SendQuery(raw_data) {
@@ -58,6 +65,7 @@ function FirstQueryRestyle() {
 
 function Keydown(e) {
   if (e.keyCode == 13) { // Pressed enter
+    initial_time = new Date()
     query = $('#search_box').val()
     if (query.length > 0 && query.length <= 50) {
       if (virgin)
