@@ -30,8 +30,6 @@ namespace indexer {
 
   unordered_map<string, int> term_to_id; // Maps term to id (0, 1, 2, ...)
 
-  unordered_map<string, int> disambiguation; // Maps disambiguation title to title id
-
   vector<vector<IndexNode>> inverted_index;
 
   vector<float> vector_norms;
@@ -190,20 +188,6 @@ namespace indexer {
     ofs.close();
   }
 
-  void BuildDisambiguation() {
-    for (int i = 0; i < N; i++) {
-      const string& title = titles[i];
-      const size_t idx = title.find("(desambiguacao)");
-      if (idx != string::npos) {
-        string prefix = title.substr(0, idx);
-        while (!prefix.empty() && (prefix.back() == '(' || prefix.back() == ' '))
-          prefix.pop_back();
-        if (!prefix.empty())
-          disambiguation[prefix] = i;
-      }
-    }
-  }
-
   void BuildTitleToId() {
     for (int i = 0; i < N; i++) 
       title_to_id[titles[i]] = i;
@@ -271,7 +255,7 @@ namespace indexer {
         const float text_weight = TFIDF(text_ct, i);
         const float title_weight = TFIDF(title_ct, i);
 
-        // ↓ Arbitrary decision of setting weight as 60% title weight plus 40% text weight
+        // ↓ Arbitrary decision of setting weight as 70% title weight plus 30% text weight
         const float weight = .7f * title_weight + .3f * text_weight;
 
         if (weight > .02f) // Discard tiny weights
@@ -337,8 +321,6 @@ namespace indexer {
     LoadIndex();
     ofs << "Loading norms.txt\n";
     LoadNorms();
-    ofs << "Building disambiguation\n";
-    BuildDisambiguation();
     ofs << "Building title_to_id\n";
     BuildTitleToId();
 
@@ -399,23 +381,15 @@ namespace indexer {
       ranking.insert(j);
     }
 
-    // ↓ Second base case: found disambiguation for this exact query
-    if (disambiguation.count(query)) {
-      const int j = disambiguation[query];
-      ranking.erase(j);
-      score[j] = 999.f; // Highest
-      ranking.insert(j);
-    }
-
-    // ↓ Third base case: perfect match, but no disambiguation
-    else if (title_to_id.count(query)) {
+    // ↓ Second base case: perfect match
+    if (title_to_id.count(query)) {
       const int j = title_to_id[query];
       ranking.erase(j);
-      score[j] = 999.f;
+      score[j] = 99.f; // Highest
       ranking.insert(j);
     }
 
-    // ↓ Fourth base case: no matches at all
+    // ↓ Third base case: no matches at all
     else if (ranking.empty())
       return "Conjunto vazio" + string{ char{ 30 } } + "0";
     
