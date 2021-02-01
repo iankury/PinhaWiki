@@ -193,27 +193,31 @@ namespace preprocess {
     utility::PrintElapsedTime(initial_time);
   }
 
+  string AlphaSingleLine(const string& s) {
+    string ans;
+    bool last_is_space = false;
+    for (int i = 0; i < s.length(); i++) {
+      if (isalpha(s[i]) || s[i] == '\n') {
+        last_is_space = false;
+        ans.push_back(s[i]);
+      }
+      else if (!last_is_space) {
+        ans.push_back(' ');
+        last_is_space = true;
+      }
+    }
+    return ans;
+  }
+
   void Alpha(const string& filename) {
     double initial_time = clock();
 
     ifstream ifs(filename);
     ofstream ofs(utility::Path("alpha"));
     string s;
-    while (getline(ifs, s)) {
-      string to_write;
-      bool last_is_space = false;
-      for (int i = 0; i < s.length(); i++) {
-        if (isalpha(s[i]) || s[i] == '\n') {
-          last_is_space = false;
-          to_write.push_back(s[i]);
-        }
-        else if (!last_is_space) {
-          to_write.push_back(' ');
-          last_is_space = true;
-        }
-      }
-      ofs << to_write << "\n";
-    }
+    while (getline(ifs, s)) 
+      ofs << AlphaSingleLine(s) << "\n";
+    
     ifs.close();
     ofs.close();
 
@@ -317,6 +321,27 @@ namespace preprocess {
     utility::PrintElapsedTime(initial_time);
   }
 
+  void NoXml(const string& filename) {
+    double initial_time = clock();
+
+    ifstream ifs(filename);
+    ofstream ofs(utility::Path("noxml"));
+    ifs >> noskipws;
+    ofs << noskipws;
+    char c;
+    while (ifs >> c) {
+      if (c == '|')
+        ofs << " ";
+      else if (c != '\'' && c != '[' && c != ']' && c != '{' && c != '}' && c != '"')
+        ofs << c;
+    }
+
+    ifs.close();
+    ofs.close();
+
+    utility::PrintElapsedTime(initial_time);
+  }
+
   void SplitIndex() {
     double initial_time = clock();
 
@@ -356,6 +381,51 @@ namespace preprocess {
 
     ofstream ofs(utility::Path("first_term_id_in_file"));
     for (int x : first_term_id_in_file)
+      ofs << x << "\n";
+    ofs.close();
+
+    utility::PrintElapsedTime(initial_time);
+  }
+
+  void SplitText() {
+    double initial_time = clock();
+
+    ifstream ifs(utility::Path("text"));
+
+    vector<int> first_title_id_in_file{ 0 };
+    int current_size = 0, file_id = 0, term_id = 0;
+    vector<string> lines;
+    string line;
+    while (getline(ifs, line)) {
+      current_size += line.length();
+      lines.push_back(line);
+
+      if (current_size > 1000000) {
+        current_size = 0;
+        ofstream ofs(utility::Path("text/" + to_string(file_id)));
+        for (const string& s : lines)
+          ofs << s << "\n";
+        ofs.close();
+        lines.clear();
+
+        ++file_id;
+        first_title_id_in_file.push_back(term_id + 1);
+      }
+
+      ++term_id;
+    }
+
+    ifs.close();
+
+    if (!lines.empty()) {
+      ofstream ofs(utility::Path("text/" + to_string(file_id)));
+      for (const string& s : lines)
+        ofs << s << "\n";
+      ofs.close();
+    }
+
+    ofstream ofs(utility::Path("first_title_id_in_file"));
+    for (int x : first_title_id_in_file)
       ofs << x << "\n";
     ofs.close();
 

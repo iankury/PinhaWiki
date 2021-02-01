@@ -8,11 +8,6 @@ namespace indexer {
     }
   };
 
-  struct IndexNode {
-    int j;
-    float w;
-  };
-
   // ↓ Number of documents in the collection (assigned in LoadTitles)
   size_t N; 
 
@@ -32,15 +27,15 @@ namespace indexer {
 
   vector<vector<IndexNode>> inverted_index;
 
-  vector<float> vector_norms;
-
-  vector<int> first_id_in_file;
+  vector<int> first_term_id_in_file, first_title_id_in_file;
 
   // ↓ Resized and assigned in LoadTerms
   vector<int> TF; // Term Frequency of term i in collection (not the local TF)
 
   // ↓ Resized in LoadTerms, assigned in BuildIDF
   vector<float> IDF; // Inverse Document Frequency of term i
+
+  vector<float> vector_norms;
 
   inline float ComputeIDF(int i) {
     return log2(float(N) / TF[i]); // In the book: page 38, formula 2.6
@@ -190,13 +185,24 @@ namespace indexer {
     ofs.close();
   }
 
-  void LoadFirstIdInFile() {
+  void LoadFirstTermIdInFile() {
     ifstream ifs(utility::Path("first_term_id_in_file"));
 
     int x;
     while (ifs >> x)
-      first_id_in_file.push_back(x);
-    first_id_in_file.push_back(INT32_MAX);
+      first_term_id_in_file.push_back(x);
+    first_term_id_in_file.push_back(INT32_MAX);
+
+    ifs.close();
+  }
+
+  void LoadFirstTitleIdInFile() {
+    ifstream ifs(utility::Path("first_title_id_in_file"));
+
+    int x;
+    while (ifs >> x)
+      first_title_id_in_file.push_back(x);
+    first_title_id_in_file.push_back(INT32_MAX);
 
     ifs.close();
   }
@@ -314,148 +320,5 @@ namespace indexer {
     }
     for (float& norm : vector_norms)
       norm = sqrt(norm);
-  }
-
-
-  //  =============== ENGINE ===============
-
-  void LoadEngine() {
-    ofstream ofs(utility::Path("log"), ios_base::app);
-    ofs << "\n\n ======= STARTED LOADING ENGINE\n\n";
-    ofs << "Loading titles.txt\n";
-    LoadTitles();
-    ofs << "Loaded " << N << " titles\n";
-    ofs << "Loading original_titles.txt\n";
-    LoadOriginalTitles();
-    ofs << "Loading redirections.txt\n";
-    LoadRedirections();
-    ofs << "Loading terms.txt\n";
-    LoadTerms();
-    ofs << "Loaded " << M << " terms\n";
-    ofs << "Loading norms.txt\n";
-    LoadNorms();
-    ofs << "Building title_to_id\n";
-    BuildTitleToId();
-    ofs << "Loading first_term_id_in_file\n";
-    LoadFirstIdInFile();
-    ofs << "Loaded first_term_id_in_file for ";
-    ofs << int(first_id_in_file.size()) - 1 << " files\n";
-    ofs << "\n ======= FINISHED LOADING ENGINE\n";
-    ofs.close();
-  }
-
-  vector<IndexNode> InvertedIndex(int term_id) {
-    vector<IndexNode> ans;
-
-    auto ub = upper_bound(first_id_in_file.begin(), first_id_in_file.end(), term_id);
-    const int file_id = ub - first_id_in_file.begin() - 1;
-
-    ifstream ifs(utility::Path("index/" + to_string(file_id)));
-    string s;
-    for (int i = 0; i <= term_id - first_id_in_file[file_id]; i++)
-      getline(ifs, s);
-
-    size_t sz;
-    stringstream ss(s);
-    ss >> sz;
-
-    for (int i = 0; i < sz; i++) {
-      ans.push_back(IndexNode());
-      ss >> ans.back().j >> ans.back().w;
-    }
-
-    return ans;
-  }
-
-  string Query(string query) {
-    // ↓ First base case: there exists a redirection for this exact query
-    if (title_to_id.count(query)) {
-      const int j = title_to_id[query];
-      if (redirections.count(original_titles[j])) {
-        string redirected_title = original_titles[j];
-        while (redirections.count(redirected_title))
-          redirected_title = redirections[redirected_title];
-
-        return Query(preprocess::LowerAsciiSingleLine(redirected_title));
-      }
-    }
-
-    unordered_map<int, float> score; // Similarity between each document and the query
-    unordered_map<int, float> numerators;
-
-    auto comp = [&](int px, int qx) { // Heaviest first
-      if (score[px] == score[qx])
-        return px < qx;
-      return score[px] > score[qx];
-    };
-    auto ranking = set<int, decltype(comp)>(comp); // Stores results sorted by score
-
-    unordered_set<int> query_ids;
-
-    stringstream ss(query);
-    string term;
-
-    // ↓ Build query_ids and filter query terms
-    while (ss >> term) {
-      if (!term_to_id.count(term)) // Term doesn't exist in collection
-        continue;
-
-      const int i = term_to_id[term];
-      
-      if (IDF[i] < 1) // Term is too frequent to matter
-        continue;
-
-      query_ids.insert(i);
-    }
-
-    // ↓ Get info from relevant documents only (connected to query terms)
-    for (int i : query_ids) 
-      for (const auto& node : InvertedIndex(i))
-        numerators[node.j] += node.w;
-
-    for (const auto& doc_info : numerators) {
-      const int j = doc_info.first;
-      const float numerator = doc_info.second;
-
-      score[j] = numerator / vector_norms[j];
-      ranking.insert(j);
-    }
-
-    // ↓ Second base case: perfect match
-    if (title_to_id.count(query)) {
-      const int j = title_to_id[query];
-      ranking.erase(j);
-      score[j] = 99.f; // Highest
-      ranking.insert(j);
-    }
-
-    // ↓ Third base case: no matches at all
-    else if (ranking.empty())
-      return "Conjunto vazio" + string{ utility::kSeparator } + "0";
-    
-    unordered_set<string> visited; // Try to make sure there are no duplicate results
-
-    string ans;
-    for (int j : ranking) {
-      // ↓ Handle duplicates
-      const string processed_title = preprocess::LowerAsciiSingleLine(original_titles[j]);
-      if (visited.count(processed_title)) 
-        continue;
-      visited.insert(processed_title);
-
-      // ↓ Send the article names to the frontend
-      ans += original_titles[j];
-      ans.push_back(utility::kSeparator);
-      
-      // ↓ Send the scores to the frontend
-      ans += to_string((int)( 100.f * score[j] + .5f ));
-      ans.push_back(utility::kSeparator);
-
-      if (visited.size() >= 100) // Keep only top results
-        break;
-    }
-
-    ans.pop_back();
-    return ans;
   }
 }

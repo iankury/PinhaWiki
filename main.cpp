@@ -11,9 +11,9 @@ Recuperação de Informação: Conceitos e tecnologia das máquinas de busca.
 
 #include "pinhawiki.h"
 
-#define COMMAND_LINE_INTERFACE_MODE 0
+#define COMMAND_LINE_INTERFACE_MODE false
 
-#if COMMAND_LINE_INTERFACE_MODE == 1
+#if COMMAND_LINE_INTERFACE_MODE
 
 int main() {
 

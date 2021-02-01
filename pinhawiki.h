@@ -26,27 +26,40 @@ namespace preprocess {
   void SplitTitlesAndArticles(const string& filename);
   string LowerAsciiSingleLine(const string& line);
   void LowerAscii(const string& filename);
+  string AlphaSingleLine(const string& s);
   void Alpha(const string& filename);
   void DeleteCommon(const string& filename);
   void DeleteLong(const string& filename);
   void DeleteExtremeFreq(const string& filename);
   void Redirect(const string& filename);
+  void NoXml(const string& filename);
   void SplitIndex();
+  void SplitText();
   void FullPreprocessing();
 }
 
 namespace indexer {
+  struct IndexNode { int j; float w; };
+  extern size_t N, M;
+  extern unordered_map<string, int> title_to_id;
+  extern vector<string> original_titles;
+  extern unordered_map<string, string> redirections;
   extern unordered_map<string, int> term_to_id;
+  extern vector<int> first_term_id_in_file, first_title_id_in_file;
+  extern vector<float> IDF, vector_norms;
 
   void LoadTitles();
-  void LoadOriginalTitles();
+  void LoadOriginalTitles(); 
+  void LoadRedirections();
   void LoadTerms();
   void SaveTerms();
   void LoadIndex();
   void SaveIndex();
   void LoadNorms();
   void SaveNorms();
-  void BuildDisambiguation();
+  void LoadFirstTermIdInFile();
+  void LoadFirstTitleIdInFile();
+  void BuildTitleToId();
   void BuildIndex();
 
   // ↓ Engine

@@ -21,12 +21,8 @@ function DisplayResponse(res) {
     $(`<p>Resultados da consulta "${query}":</p>`)
   )
   res.split(SEPARATOR).forEach((x, i) => {
-    if (i % 2) { // Score
-      $('#results').append(
-        (x == '99000') ? $(`<p>Perfect match</p>`)
-        : $(`<p>Vector space score was ${x}</p>`)
-      )
-    }
+    if (i % 2)  // Snippet
+      $('#results').append($(`<p>${x}</p>`))
     else { // Article name
       const link = WIKI_URL + encodeURI(x)
       $('#results').append(

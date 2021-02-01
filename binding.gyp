@@ -2,7 +2,14 @@
 	"targets": [
     { 
       "target_name": "pinhawiki", 
-      "sources": [ "indexer.cpp", "interface.cpp", "main.cpp", "preprocess.cpp", "utility.cpp" ]
+      "sources": [ 
+        "engine.cpp",
+        "indexer.cpp", 
+        "interface.cpp", 
+        "main.cpp", 
+        "preprocess.cpp", 
+        "utility.cpp" 
+      ]
     } 
   ]
 }

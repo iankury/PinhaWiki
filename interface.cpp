@@ -20,7 +20,9 @@ namespace command_line_interface {
     cout << "noextreme <path> -- deletes terms with extreme frequencies";
     cout << "  from articles (requires terms.txt)\n";
     cout << "redirect <path> -- writes final targets for each original title\n";
+    cout << "noxml <path> -- deletes '\"[]{} and | becomes space\n";
     cout << "split_index -- writes index to a lot of files + first term id for each file\n";
+    cout << "split_text -- same as above but with text (for snippets)\n";
     cout << "preprocess -- does all preprocessing sequentially\n";
     cout << "save_terms -- writes all unique terms (requires titles.txt)\n";
     cout << "  along with their total frequency in the collection\n";
@@ -65,8 +67,12 @@ namespace command_line_interface {
       preprocess::DeleteExtremeFreq(filename);
     else if (command == "redirect")
       preprocess::Redirect(filename);
+    else if (command == "noxml")
+      preprocess::NoXml(filename);
     else if (command == "split_index")
       preprocess::SplitIndex();
+    else if (command == "split_text")
+      preprocess::SplitText();
     else if (command == "preprocess")
       preprocess::FullPreprocessing();
     else if (command == "load_titles")
