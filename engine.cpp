@@ -170,12 +170,14 @@ namespace indexer {
     // ↓ Get info from relevant documents only (connected to query terms)
     for (int i : query_ids)
       for (const auto& node : InvertedIndex(i))
-        numerators[node.j] += node.w;
+        numerators[node.j] += TFIDF(node.w, i);
 
     for (const auto& doc_info : numerators) {
       const int j = doc_info.first;
       const float numerator = doc_info.second;
 
+      // ↓ Finishing formula from page 46, but dropping query norm and
+      //   redefining wij to TFij and wiq to IDFi, as mentioned in the book
       score[j] = numerator / vector_norms[j];
       ranking.insert(j);
     }
@@ -210,7 +212,15 @@ namespace indexer {
       ans += Snippet(j, TextForSnippets(j), query_terms);
       ans.push_back(utility::kSeparator);
 
-      if (visited.size() >= 100) // Keep only top results
+      // ↓ Send the cosine to the frontend
+      stringstream converter;
+      converter << fixed << setprecision(2) << score[j];
+      string str_sim;
+      converter >> str_sim;
+      ans += str_sim;
+      ans.push_back(utility::kSeparator);
+
+      if (visited.size() >= 10) // Keep only top results
         break;
     }
 

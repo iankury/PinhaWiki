@@ -41,10 +41,7 @@ namespace indexer {
     return log2(float(N) / TF[i]); // In the book: page 38, formula 2.6
   }
 
-  // ↓ Uses "local" TF, i. e. term frequency in the current document, not in the collection
-  inline float TFIDF(int local_TF, int i) { // Returns the TF-IDF weight
-    return log2(1.f + local_TF) * IDF[i]; // In the book: page 42, table 2.6, row 3
-  }
+  
 
   void BuildIDF() {
     for (int i = 0; i < M; i++)
@@ -137,8 +134,7 @@ namespace indexer {
 
     inverted_index.resize(M);
     string line;
-    int sz, j;
-    float w;
+    int sz, j, w;
     for (int i = 0; i < M; i++) {
       getline(ifs, line);
       stringstream ss(line);
@@ -160,8 +156,7 @@ namespace indexer {
       const size_t sz = inverted_index[i].size();
       ofs << sz;
       for (size_t k = 0; k < sz; k++) {
-        ofs << " " << inverted_index[i][k].j << " ";
-        ofs << fixed << setprecision(2) << inverted_index[i][k].w;
+        ofs << " " << inverted_index[i][k].j << " " << inverted_index[i][k].w;
       }
       ofs << "\n";
     }
@@ -220,7 +215,7 @@ namespace indexer {
     cout << "Loaded " << M << " terms.\n";
 
     // ↓ For term i, document j has weight w[{ i, j }]
-    unordered_map<pair<int, int>, float, PairHash> w;
+    unordered_map<pair<int, int>, int, PairHash> w;
 
     ifstream ifs(utility::Path("articles"));
 
@@ -236,7 +231,7 @@ namespace indexer {
       unordered_map<int, int> title_TF;
 
       // ↓ Temporary container for pairs of weights and ids (for sorting)
-      vector<pair<float, int>> w_and_id;
+      vector<pair<int, int>> w_and_id;
 
       // ↓ Build title Term Frequencies
       while (sst >> term) 
@@ -271,21 +266,18 @@ namespace indexer {
         // ↓ Occurrences of term i in the title of document j (save memory by not adding extra zeroes)
         const int title_ct = title_TF.count(i) ? title_TF[i] : 0; 
 
-        const float text_weight = TFIDF(text_ct, i);
-        const float title_weight = TFIDF(title_ct, i);
+        // ↓ Arbitrary decision of setting setting title : text weight ratio to 10 : 1
+        //   Also, we reduce w[i][j] to only TF, as described in page 47 of the book
+        const int weight = 10 * title_ct + text_ct;
 
-        // ↓ Arbitrary decision of setting weight as 70% title weight plus 30% text weight
-        const float weight = .7f * title_weight + .3f * text_weight;
-
-        if (weight > .02f) // Discard tiny weights
-          w_and_id.push_back({ weight, i });
+        w_and_id.push_back({ weight, i });
       }
 
       // ↓ Consider only the top 80% heaviest terms for document j
       const size_t threshold = .8 * w_and_id.size();
-      sort(begin(w_and_id), end(w_and_id), greater<pair<float, int>>());
+      sort(begin(w_and_id), end(w_and_id), greater<pair<int, int>>());
       for (size_t k = 0; k < threshold; k++) {
-        const float weight = w_and_id[k].first;
+        const int weight = w_and_id[k].first;
         const int i = w_and_id[k].second;
         w[{ i, j }] = weight;
       }
@@ -310,17 +302,17 @@ namespace indexer {
     for (const auto& p : w) {
       const int i = p.first.first;
       const int j = p.first.second;
-      const float weight = p.second;
+      const int weight = p.second;
       const int idx = inverted_index_current_position[i];
 
       inverted_index[i][idx] = IndexNode{ j, weight };
 
       ++inverted_index_current_position[i];
 
-      vector_norms[j] += weight * weight;
+      vector_norms[j] += (float)weight * weight;
     }
     for (float& norm : vector_norms)
-      norm = sqrt(norm);
+      norm = sqrtf(norm);
   }
 
   void FullBuild() {

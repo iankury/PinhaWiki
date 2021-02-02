@@ -44,7 +44,7 @@ namespace preprocess {
 }
 
 namespace indexer {
-  struct IndexNode { int j; float w; };
+  struct IndexNode { int j, w; };
   extern size_t N, M;
   extern unordered_map<string, int> title_to_id;
   extern vector<string> original_titles;
@@ -52,6 +52,11 @@ namespace indexer {
   extern unordered_map<string, int> term_to_id;
   extern vector<int> first_term_id_in_file, first_title_id_in_file;
   extern vector<float> IDF, vector_norms;
+
+  // ↓ Uses "local" TF, i. e. term frequency in the current document, not in the collection
+  inline float TFIDF(int local_TF, int i) { // Returns the TF-IDF weight
+    return log2(1.f + local_TF) * IDF[i]; // In the book: page 42, table 2.6, row 3
+  }
 
   void LoadTitles();
   void LoadOriginalTitles(); 

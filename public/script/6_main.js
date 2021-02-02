@@ -20,16 +20,16 @@ function DisplayResponse(res) {
   $('#results').append(
     $(`<p>Resultados da consulta "${query}":</p>`)
   )
-  res.split(SEPARATOR).forEach((x, i) => {
-    if (i % 2)  // Snippet
-      $('#results').append($(`<p>${x}</p>`))
-    else { // Article name
-      const link = WIKI_URL + encodeURI(x)
-      $('#results').append(
-        $(`<a href="${link}" target="_blank">${x}</a>`)
-      )
-    }
-  }) 
+  const tokens = res.split(SEPARATOR)
+
+  for (i = 0; i < tokens.length; i += 3) {
+    const link = WIKI_URL + encodeURI(tokens[i])
+    $('#results').append(
+      $(`<a href="${link}" target="_blank">${tokens[i]}</a>`)
+    )
+    $('#results').append($(`<p>${tokens[i + 1]}</p>`))
+    $('#results').append($(`<p>Similarity between document and query: ${tokens[i + 2]}</p>`))
+  }
   $('#results').scrollTop(0)
 
   delta_time = new Date() - initial_time
