@@ -44,4 +44,14 @@
     font-size: calc(12px + .5vw);
     padding: 1vw;
   }
+
+  h2 {
+    position: absolute;
+    font-family: monospace;
+    font-size: 36px;
+    width: fit-content;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
 }

@@ -35,9 +35,8 @@ function LoadAddon() {
   }
 }
 
-LoadAddon()
-
 app.post('/open', (req, res) => {
+  LoadAddon()
   res.sendStatus(201)
 })
 

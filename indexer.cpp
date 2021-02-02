@@ -41,8 +41,6 @@ namespace indexer {
     return log2(float(N) / TF[i]); // In the book: page 38, formula 2.6
   }
 
-  
-
   void BuildIDF() {
     for (int i = 0; i < M; i++)
       IDF[i] = ComputeIDF(i);
