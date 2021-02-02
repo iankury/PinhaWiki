@@ -27,8 +27,8 @@ function DisplayResponse(res) {
     $('#results').append(
       $(`<a href="${link}" target="_blank">${tokens[i]}</a>`)
     )
+    $('#results').append($(`<p style="color:#1b5196">Similarity between document and query: ${tokens[i + 2]}</p>`))
     $('#results').append($(`<p>${tokens[i + 1]}</p>`))
-    $('#results').append($(`<p>Similarity between document and query: ${tokens[i + 2]}</p>`))
   }
   $('#results').scrollTop(0)
 

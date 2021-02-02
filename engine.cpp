@@ -75,17 +75,19 @@ namespace indexer {
     stringstream ss(text);
     string word;
     while (ss >> word) {
-      const string processed_word = preprocess::AlphaSingleLine(
-        preprocess::LowerAsciiSingleLine(word)
-      );
+      const string processed_word = 
+        preprocess::StripWhitespaceSingleLine(
+          preprocess::AlphaSingleLine(
+            preprocess::LowerAsciiSingleLine(word)
+          )
+        );
       bool match = false;
-      for (const string& term : query_terms)
+      for (const string& term : query_terms) {
         if (term == processed_word) {
           match = true;
           break;
         }
-      if (!match && word.length() >= 20)
-        continue;
+      }
       cur.push_back(word);
       occ_q.push_back(match);
       if (match)

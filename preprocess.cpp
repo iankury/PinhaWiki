@@ -1,6 +1,18 @@
 #include "pinhawiki.h"
 
 namespace preprocess {
+  string StripWhitespaceSingleLine(string s) {
+    while (!s.empty() && isspace(s.back()))
+      s.pop_back();
+    for (int i = 0; i < s.length(); i++)
+      if (!isspace(s[i])) {
+        if (i > 0)
+          s = s.substr(i);
+        break;
+      }
+    return s;
+  }
+
   void StripWhitespace(const string& filename) {
     double initial_time = clock();
 

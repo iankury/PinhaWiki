@@ -24,6 +24,7 @@ namespace utility {
 }
 
 namespace preprocess {
+  string StripWhitespaceSingleLine(string s);
   void StripWhitespace(const string& filename);
   void WriteRedirections(const string& filename);
   void RemoveTrash(const string& filename);
