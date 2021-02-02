@@ -9,8 +9,8 @@ namespace indexer {
     ofs << "Loaded " << N << " titles\n";
     ofs << "Loading original_titles.txt\n";
     LoadOriginalTitles();
-    ofs << "Loading redirections.txt\n";
-    LoadRedirections();
+    /*ofs << "Loading redirections.txt\n";
+    LoadRedirections();*/
     ofs << "Loading terms.txt\n";
     LoadTerms();
     ofs << "Loaded " << M << " terms\n";
@@ -33,7 +33,7 @@ namespace indexer {
     auto ub = upper_bound(first_term_id_in_file.begin(), first_term_id_in_file.end(), term_id);
     const int file_id = ub - first_term_id_in_file.begin() - 1;
 
-    ifstream ifs(utility::Path("index/" + to_string(file_id)));
+    ifstream ifs(utility::Path("index/" + utility::ToFileName(file_id)));
     string s;
     for (int i = 0; i <= term_id - first_term_id_in_file[file_id]; i++)
       getline(ifs, s);
@@ -56,20 +56,16 @@ namespace indexer {
     auto ub = upper_bound(first_title_id_in_file.begin(), first_title_id_in_file.end(), title_id);
     const int file_id = ub - first_title_id_in_file.begin() - 1;
 
+    ifstream ifs(utility::Path("text/" + utility::ToFileName(file_id)));
 
-    ifstream ifs(utility::Path("text/" + to_string(file_id)));
-    for (int i = 0; i <= title_id - first_title_id_in_file[file_id]; i++)
-      getline(ifs, s);
+    if (ifs.good()) 
+      for (int i = 0; i <= title_id - first_title_id_in_file[file_id]; i++)
+        getline(ifs, s);
 
     return s;
   }
 
-  string Snippet(
-    int title_id,
-    const string& text, 
-    const vector<string>& query_terms, 
-    bool last_chance = false
-  ) {
+  string Snippet(int title_id, const string& text, const vector<string>& query_terms) {
     string ans;
 
     deque<string> cur, best;
@@ -115,11 +111,8 @@ namespace indexer {
       }
     }
 
-    if (best_occurrences == 0) {
-      if (last_chance)
-        return "Snippet mais sem sentido do universo";
-      return Snippet(title_id, original_titles[title_id], query_terms, true);
-    }
+    if (best_occurrences == 0)
+      return "-";
 
     for (int i = 0; i < best.size(); i++) {
       word = best_occ_q[i] ? "<b>" + best[i] + "</b>" : best[i];
@@ -130,6 +123,7 @@ namespace indexer {
   }
 
   string Query(string query) {
+    /*
     // ↓ First base case: there exists a redirection for this exact query
     if (title_to_id.count(query)) {
       const int j = title_to_id[query];
@@ -141,6 +135,7 @@ namespace indexer {
         return Query(preprocess::LowerAsciiSingleLine(redirected_title));
       }
     }
+    */
 
     unordered_map<int, float> score; // Similarity between each document and the query
     unordered_map<int, float> numerators;

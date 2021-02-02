@@ -35,18 +35,27 @@ namespace preprocess {
       if (s.find("<title>") != string::npos) 
         alias = s.substr(7, s.length() - 15);
       else {
-        const int idx = s.find("#REDIRECIONAMENTO");
-        if (idx != string::npos) {
-          int i = idx + 16, depth = 0;
-          string target_title;
-          while (i < s.length() && (depth < 2 || s[i] != ']')) {
-            if (depth == 2)
-              target_title.push_back(s[i]);
-            else if (s[i] == '[')
-              depth++;
-            i++;
+        const vector<string> redir_strings{ ">#REDIRECIONAMENTO", ">#REDIRECT" };
+        for (const string& redir_string : redir_strings) {
+          auto it = std::search(
+            s.begin(), s.end(),
+            redir_string.begin(), redir_string.end(),
+            [](char ch1, char ch2) { return std::toupper(ch1) == std::toupper(ch2); }
+          );
+          if (it != s.end()) {
+            const int idx = it - s.begin();
+            int i = idx + 9, depth = 0;
+            string target_title;
+            while (i < s.length() && (depth < 2 || s[i] != ']')) {
+              if (depth == 2)
+                target_title.push_back(s[i]);
+              else if (s[i] == '[')
+                depth++;
+              i++;
+            }
+            redirect[alias] = target_title;
+            break;
           }
-          redirect[alias] = target_title;
         }
       }
     }
@@ -66,6 +75,12 @@ namespace preprocess {
   void RemoveTrash(const string& filename) {
     double initial_time = clock();
 
+    cout << "Loading redirections.\n";
+    indexer::LoadRedirections();
+    cout << "Loaded " << indexer::redirections.size() << " redirections.\n";
+
+    vector<int> title_stats(10);
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("notrash"));
     string s;
@@ -82,7 +97,9 @@ namespace preprocess {
           ofs << r << "\n";
       }
       else if (s.find("<title>") != string::npos) {
-        if (!utility::ValidTitle(s.substr(7, s.length() - 15))) {
+        const int title_verdict = utility::ValidTitle(s.substr(7, s.length() - 15));
+        ++title_stats[title_verdict];
+        if (title_verdict != utility::GOOD_TITLE) {
           while (getline(ifs, s) && s != "</page>");
           continue;
         }
@@ -98,6 +115,13 @@ namespace preprocess {
 
     ifs.close();
     ofs.close();
+
+    cout << "Found " << title_stats[utility::GOOD_TITLE] << " good titles,\n";
+    cout << "      " << title_stats[utility::EMPTY_TITLE] << " empty titles,\n";
+    cout << "      " << title_stats[utility::PARENTHESIS_START] << " (-started titles,\n";
+    cout << "      " << title_stats[utility::REDIRECTED_TITLE] << " redirected titles,\n";
+    cout << "      " << title_stats[utility::CONTAINS_INVALID] << " invalid-substr titles,\n";
+    cout << "  and " << title_stats[utility::DISAMBIGUATION_TITLE] << " disambiguations.\n";
 
     utility::PrintElapsedTime(initial_time);
   }
@@ -141,7 +165,7 @@ namespace preprocess {
 
     ifstream ifs(filename);
     ofstream ofs(utility::Path("articles"));
-    ofstream ofst(utility::Path("titles"));
+    ofstream ofst(utility::Path("original_titles"));
     string s;
     while (getline(ifs, s)) {
       if (s == "<page>") {
@@ -255,8 +279,8 @@ namespace preprocess {
     string s;
     while (getline(ifs, s)) {
       stringstream ss(s);
-      while (getline(ss, s, ' '))
-        if (s.length() > 1 && s.length() < 15)
+      while (getline(ss, s, ' ')) 
+        if (s.length() > 1 && s.length() < 15) 
           ofs << s << " ";
       ofs << "\n";
     }
@@ -278,43 +302,14 @@ namespace preprocess {
   void DeleteExtremeFreq(const string& filename) {
     double initial_time = clock();
 
+    indexer::LoadTerms();
+    cout << "Loaded " << indexer::term_to_id.size() << " terms.\n";
+
     ifstream ifs(filename);
     ofstream ofs(utility::Path("noextreme"));
     string s;
     while (getline(ifs, s))
       ofs << DeleteExtremeFreqSingleLine(s) << "\n";
-    ifs.close();
-    ofs.close();
-
-    utility::PrintElapsedTime(initial_time);
-  }
-
-  void Redirect(const string& filename) {
-    double initial_time = clock();
-
-    unordered_map<string, string> redirections;
-
-    ifstream ifs_redir(utility::Path("redirections"));
-    string alias, target_title;
-    while (getline(ifs_redir, alias) && getline(ifs_redir, target_title))
-      if (alias != target_title)
-        redirections[alias] = target_title;
-    ifs_redir.close();
-
-    ifstream ifs(filename);
-    ofstream ofs(utility::Path("redirected_titles"));
-    string s;
-    while (getline(ifs, s)) {
-      int sanity = 123456;
-      while (redirections.count(s) && --sanity) 
-        s = redirections[s];
-      if (sanity < 1) {
-        cout << "Eternal redirection detected.\n";
-        cout << s << " to " << redirections[s] << "\n";
-        exit(0);
-      }
-      ofs << s << "\n";
-    }
     ifs.close();
     ofs.close();
 
@@ -357,7 +352,7 @@ namespace preprocess {
 
       if (current_size > 1000000) {
         current_size = 0;
-        ofstream ofs(utility::Path("index/" + to_string(file_id)));
+        ofstream ofs(utility::Path("index/" + utility::ToFileName(file_id)));
         for (const string& s : lines)
           ofs << s << "\n";
         ofs.close();
@@ -373,7 +368,7 @@ namespace preprocess {
     ifs.close();
 
     if (!lines.empty()) {
-      ofstream ofs(utility::Path("index/" + to_string(file_id)));
+      ofstream ofs(utility::Path("index/" + utility::ToFileName(file_id)));
       for (const string& s : lines)
         ofs << s << "\n";
       ofs.close();
@@ -402,7 +397,7 @@ namespace preprocess {
 
       if (current_size > 1000000) {
         current_size = 0;
-        ofstream ofs(utility::Path("text/" + to_string(file_id)));
+        ofstream ofs(utility::Path("text/" + utility::ToFileName(file_id)));
         for (const string& s : lines)
           ofs << s << "\n";
         ofs.close();
@@ -418,7 +413,7 @@ namespace preprocess {
     ifs.close();
 
     if (!lines.empty()) {
-      ofstream ofs(utility::Path("text/" + to_string(file_id)));
+      ofstream ofs(utility::Path("text/" + utility::ToFileName(file_id)));
       for (const string& s : lines)
         ofs << s << "\n";
       ofs.close();
@@ -450,6 +445,9 @@ namespace preprocess {
     SplitTitlesAndArticles(utility::Path("notrash"));
     remove((utility::Path("notrash")).c_str());
 
+    cout << "Making noxml version of articles.\n";
+    NoXml(utility::Path("articles"));
+
     cout << "Making articles lowercase and ASCII.\n";
     LowerAscii(utility::Path("articles"));
     remove((utility::Path("articles")).c_str());
@@ -470,7 +468,12 @@ namespace preprocess {
       (utility::Path("articles")).c_str()
     );
 
-    cout << "Keeping original titles.\n";
+    cout << "Making LowerASCII version of titles.\n";
+    LowerAscii(utility::Path("original_titles"));
+    rename(
+      (utility::Path("lower")).c_str(),
+      (utility::Path("titles")).c_str()
+    );
 
     cout << "Finished preprocessing chain.\n";
     utility::PrintElapsedTime(initial_time);

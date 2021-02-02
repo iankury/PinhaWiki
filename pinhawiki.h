@@ -2,6 +2,11 @@
 using namespace std;
 
 namespace utility {
+  enum {
+    GOOD_TITLE, EMPTY_TITLE, PARENTHESIS_START, REDIRECTED_TITLE,
+    CONTAINS_INVALID, DISAMBIGUATION_TITLE
+  };
+
   extern const string kPathPrefix;
   extern const char kSeparator;
   extern unordered_map<int, int> compressed_chars;
@@ -10,11 +15,12 @@ namespace utility {
 
   string Path(const string& filename);
   void PrintElapsedTime(const double& initial_time);
-  bool ValidTitle(const string& title);
+  int ValidTitle(const string& title);
   bool AllAscii(const string& s);
   string NoParentheses(const string& s);
   size_t CountLines(const string& filename);
   string RemoveTrailingTrash(string s);
+  string ToFileName(int x);
 }
 
 namespace preprocess {
@@ -31,7 +37,6 @@ namespace preprocess {
   void DeleteCommon(const string& filename);
   void DeleteLong(const string& filename);
   void DeleteExtremeFreq(const string& filename);
-  void Redirect(const string& filename);
   void NoXml(const string& filename);
   void SplitIndex();
   void SplitText();
@@ -61,6 +66,7 @@ namespace indexer {
   void LoadFirstTitleIdInFile();
   void BuildTitleToId();
   void BuildIndex();
+  void FullBuild();
 
   // ↓ Engine
   void LoadEngine();

@@ -122,7 +122,7 @@ namespace indexer {
     
     // ↓ Get rid of extreme terms
     for (auto& term : unique_terms)
-      if (term.second < 4 || term.second > 99999)
+      if (term.second < 4 || term.second > 499999)
         term.second = 0;
 
     ofstream ofs(utility::Path("terms"));
@@ -181,7 +181,7 @@ namespace indexer {
   void SaveNorms() {
     ofstream ofs(utility::Path("vector_norms"));
     for (int i = 0; i < N; i++)
-      ofs << fixed << setprecision(3) << vector_norms[i] << "\n";
+      ofs << fixed << setprecision(2) << vector_norms[i] << "\n";
     ofs.close();
   }
 
@@ -281,9 +281,10 @@ namespace indexer {
           w_and_id.push_back({ weight, i });
       }
 
-      // ↓ Consider only the top 50% heaviest terms for document j
+      // ↓ Consider only the top 80% heaviest terms for document j
+      const size_t threshold = .8 * w_and_id.size();
       sort(begin(w_and_id), end(w_and_id), greater<pair<float, int>>());
-      for (size_t k = 0; k < w_and_id.size() / 2; k++) {
+      for (size_t k = 0; k < threshold; k++) {
         const float weight = w_and_id[k].first;
         const int i = w_and_id[k].second;
         w[{ i, j }] = weight;
@@ -320,5 +321,14 @@ namespace indexer {
     }
     for (float& norm : vector_norms)
       norm = sqrt(norm);
+  }
+
+  void FullBuild() {
+    cout << "Building index.\n";
+    BuildIndex();
+    cout << "Saving index.\n";
+    SaveIndex();
+    cout << "Saving norms.\n";
+    SaveNorms();
   }
 }

@@ -13,8 +13,8 @@ namespace utility {
   };
 
   vector<string> invalid_substrings{
-    "Categoria:", "dia:", "Predefini", "Ficheiro:", "Portal:",
-    "Anexo:", "pico:", "MediaWiki:", "dulo:", "Ajuda:", "Livro:"
+    "Categoria:", "dia:", "Predefini", "Ficheiro:", "Portal:", "Anexo:", 
+    "pico:", "MediaWiki:", "dulo:", "Ajuda:", "Livro:"
   };
 
   unordered_set<string> common_terms{
@@ -58,18 +58,26 @@ namespace utility {
     cout << right << setw(7) << fixed << setprecision(3) << seconds << " s\n";
   }
 
-  bool ValidTitle(const string& title) {
+  int ValidTitle(const string& title) {
+    const string processed_title = RemoveTrailingTrash(title);
+
+    if (processed_title.length() == 0)
+      return EMPTY_TITLE;
+
+    if (processed_title[0] == '(')
+      return PARENTHESIS_START;
+
+    if (indexer::redirections.count(processed_title))
+      return REDIRECTED_TITLE;
+
     for (const string& s : invalid_substrings)
-      if (title.find(s) != string::npos)
-        return false;
+      if (processed_title.find(s) != string::npos)
+        return CONTAINS_INVALID;
 
-    string s;
-    stringstream ss(title);
-    getline(ss, s, ' ');
-    if (s.length() > 3 && s[0] == '(' && isdigit(s[1]) && s.back() == ')')
-      return false;
+    if (processed_title.find("(desambig") != string::npos)
+      return DISAMBIGUATION_TITLE;
 
-    return true;
+    return GOOD_TITLE;
   }
 
   bool AllAscii(const string& s) {
@@ -99,14 +107,16 @@ namespace utility {
   }
 
   string RemoveTrailingTrash(string s) {
-    while (!s.empty() && 
-      (
-        isspace(s.back()) || 
-        s.back() == '\n'  || 
-        s.back() == '\r'  || 
-        s.back() == '\t'
-      ))
+    while (!s.empty() && isspace(s.back()))
       s.pop_back();
     return s;
+  }
+
+  string ToFileName(int x) {
+    string s = to_string(x), padding{ "000" };
+    const int len = s.length();
+    for (int i = 1; i < len; i++)
+      padding.pop_back();
+    return padding + s;
   }
 }
