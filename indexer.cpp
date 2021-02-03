@@ -8,6 +8,8 @@ namespace indexer {
     }
   };
 
+  const int kRatioTitleToText = 30;
+
   // ↓ Number of documents in the collection (assigned in LoadTitles)
   size_t N; 
 
@@ -205,6 +207,14 @@ namespace indexer {
       title_to_id[titles[i]] = i;
   }
 
+  inline double PunishTinyDocs(int doc_word_count, double vector_norm) {
+    if (doc_word_count > 1500)
+      return vector_norm;
+    const double c = .6 - .001 * max(0, 300 - doc_word_count);
+    const double m = (1. - c) / 1500.;
+    return pow(vector_norm, 1. / (m * doc_word_count + c));
+  }
+
   void BuildIndex() {
     LoadTitles();
     cout << "Loaded " << N << " titles.\n";
@@ -214,6 +224,8 @@ namespace indexer {
 
     // ↓ For term i, document j has weight w[{ i, j }]
     unordered_map<pair<int, int>, int, PairHash> w;
+
+    vector<int> term_count_in_doc(N);
 
     ifstream ifs(utility::Path("articles"));
 
@@ -225,8 +237,8 @@ namespace indexer {
       // ↓ Term Frequency for each term i in this document
       unordered_map<int, int> document_TF; 
 
-      // ↓ Term Frequency for each term i in this document's title
-      unordered_map<int, int> title_TF;
+      // ↓ Whether each term i occurs is title
+      unordered_set<int> occurs_in_title;
 
       // ↓ Temporary container for pairs of weights and ids (for sorting)
       vector<pair<int, int>> w_and_id;
@@ -240,7 +252,7 @@ namespace indexer {
 
           if (term_to_id.count(term)) {
             const int i = term_to_id[term];
-            title_TF[i]++;
+            occurs_in_title.insert(i);
             document_TF[i] = 0;
           }
         }
@@ -249,7 +261,8 @@ namespace indexer {
       while (ss >> term) 
         if (term_to_id.count(term)) {
           const int i = term_to_id[term];
-          document_TF[i]++;
+          ++document_TF[i];
+          ++term_count_in_doc[j];
         }
 
       // ↓ Build weights for all terms for document j
@@ -262,11 +275,8 @@ namespace indexer {
         // ↓ Occurrences of term i in the text of document j
         const int text_ct = p.second; 
         // ↓ Occurrences of term i in the title of document j (save memory by not adding extra zeroes)
-        const int title_ct = title_TF.count(i) ? title_TF[i] : 0; 
 
-        // ↓ Arbitrary decision of setting setting title : text weight ratio to 10 : 1
-        //   Also, we reduce w[i][j] to only TF, as described in page 47 of the book
-        const int weight = 10 * title_ct + text_ct;
+        const int weight = kRatioTitleToText * int(occurs_in_title.count(i)) + text_ct;
 
         w_and_id.push_back({ weight, i });
       }
@@ -309,8 +319,8 @@ namespace indexer {
 
       vector_norms[j] += (float)weight * weight;
     }
-    for (float& norm : vector_norms)
-      norm = sqrtf(norm);
+    for (int j = 0; j < vector_norms.size(); j++)
+      vector_norms[j] = PunishTinyDocs(term_count_in_doc[j], sqrtf(vector_norms[j]));
   }
 
   void FullBuild() {
