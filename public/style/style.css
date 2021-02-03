@@ -1,0 +1,158 @@
+* {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+  *, *:before, *:after {
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+  }
+
+:focus, :active {
+  outline: none;
+}
+
+a:focus, a:active {
+  outline: none;
+}
+
+nav, footer, header, aside {
+  display: block;
+}
+
+html, body {
+  height: 100%;
+  width: 100vw;
+  font-size: 100%;
+  line-height: 1;
+  font-size: 14px;
+  -ms-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+input, button, textarea {
+  font-family: inherit;
+}
+
+body {
+  overflow-x: hidden;
+  font-family: serif;
+}
+
+input::-ms-clear {
+  display: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+  button::-moz-focus-inner {
+    padding: 0;
+    border: 0;
+  }
+
+a, a:visited {
+  text-decoration: none;
+}
+
+  a:hover {
+    text-decoration: none;
+  }
+
+ul li {
+  list-style: none;
+}
+
+img {
+  vertical-align: top;
+}
+
+::selection {
+  background: grey;
+  color: white;
+  text-shadow: none;
+}
+
+.container {
+  height: auto;
+  max-width: 1100px;
+  margin: 0px auto;
+  padding: 0px 25px;
+}
+
+.wrapper {
+  min-height: 100vh;
+  width: 100vw;
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #FBFFEC;
+}
+
+#search_header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  max-width: 500px;
+  transform: translate(0, -10vh);
+}
+
+.img_container {
+  position: relative;
+  width: auto;
+  display: flex;
+  justify-content: center;
+}
+
+  .img_container img {
+    position: relative;
+    width: 80%;
+  }
+
+#search_box {
+  display: none;
+  margin: 30px 10px;
+  height: 50px;
+  width: 100%;
+  padding: 10px 20px;
+  border-radius: 30px;
+  border: 0.1px solid #c4c4c4;
+  transition: 0.3s;
+  font-size: 20px;
+}
+
+  #search_box:hover {
+    box-shadow: 0 0px 10px rgba(0,0,0,0.10), 0 1px 10px rgba(0,0,0,0.10);
+  }
+
+  #search_box:focus {
+    box-shadow: 0 0px 10px rgba(0,0,0,0.10), 0 1px 10px rgba(0,0,0,0.10);
+  }
+
+#results_container {
+  display: none;
+  padding: 20px 0 200px 0;
+}
+
+#loading_gif {
+  padding-top: 35px;
+  width: 40%;
+}
+
+.similarity_label {
+  font-family: monospace;
+  font-size: 15px;
+  color: grey;
+  padding: 0 0 15 20;
+}
+
+.result {
+  padding-bottom: 20px;
+}

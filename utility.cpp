@@ -3,6 +3,10 @@
 namespace utility {
   const string kPathPrefix = "C:\\Users\\Administrator\\repos\\PinhaWikiC\\";
   const char kSeparator{ 30 };
+  const string kEmptyResult = (
+    "Conjunto vazio" + string{ kSeparator } +
+    "-" + string{ kSeparator } + "0"
+  );
 
   unordered_map<int, int> compressed_chars{
     { 128, 65 }, { 136, 69 }, { 140, 73 }, { 146, 79 }, { 153, 85 }, { 127, 65 },

@@ -9,8 +9,8 @@ namespace indexer {
     ofs << "Loaded " << N << " titles\n";
     ofs << "Loading original_titles.txt\n";
     LoadOriginalTitles();
-    /*ofs << "Loading redirections.txt\n";
-    LoadRedirections();*/
+    ofs << "Loading redirections.txt\n";
+    LoadRedirections();
     ofs << "Loading terms.txt\n";
     LoadTerms();
     ofs << "Loaded " << M << " terms\n";
@@ -66,7 +66,7 @@ namespace indexer {
   }
 
   string Snippet(int title_id, const string& text, const vector<string>& query_terms) {
-    string ans;
+    string ans = "... ";
 
     deque<string> cur, best;
     deque<bool> occ_q, best_occ_q;
@@ -123,24 +123,10 @@ namespace indexer {
       ans += word + " ";
     }
 
-    return ans;
+    return ans + "...";
   }
 
   string Query(string query) {
-    /*
-    // ↓ First base case: there exists a redirection for this exact query
-    if (title_to_id.count(query)) {
-      const int j = title_to_id[query];
-      if (redirections.count(original_titles[j])) {
-        string redirected_title = original_titles[j];
-        while (redirections.count(redirected_title))
-          redirected_title = redirections[redirected_title];
-
-        return Query(preprocess::LowerAsciiSingleLine(redirected_title));
-      }
-    }
-    */
-
     unordered_map<int, float> score; // Similarity between each document and the query
     unordered_map<int, float> numerators;
 
@@ -186,17 +172,32 @@ namespace indexer {
       ranking.insert(j);
     }
 
-    // ↓ Second base case: perfect match
+    // ↓ First base case: perfect match
     if (title_to_id.count(query)) {
       const int j = title_to_id[query];
       ranking.erase(j);
-      score[j] = 99.f; // Highest
+      score[j] = 99.f;
       ranking.insert(j);
+    }
+
+    // ↓ Second base case: there exists a redirection for this exact query
+    if (redirections.count(query)) {
+      string redirected_title = redirections[query];
+      while (redirections.count(redirected_title))
+        redirected_title = redirections[redirected_title];
+      redirected_title = preprocess::LowerAsciiSingleLine(redirected_title);
+      if (title_to_id.count(redirected_title) &&
+        redirected_title.find("(desamb") == string::npos) {
+        const int j = title_to_id[redirected_title];
+        ranking.erase(j);
+        score[j] = 99.f;
+        ranking.insert(j);
+      }
     }
 
     // ↓ Third base case: no matches at all
     else if (ranking.empty())
-      return "Conjunto vazio" + string{ utility::kSeparator } + "0";
+      return utility::kEmptyResult;
 
     unordered_set<string> visited; // Try to make sure there are no duplicate results
 
@@ -225,7 +226,7 @@ namespace indexer {
         ans += str_sim;
       }
       else
-        ans += "perfect match";
+        ans += "perfeita";
       ans.push_back(utility::kSeparator);
 
       if (visited.size() >= 10) // Keep only top results

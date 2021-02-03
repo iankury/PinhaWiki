@@ -71,6 +71,15 @@ namespace indexer {
     string alias, target_title;
     while (getline(ifs, alias) && getline(ifs, target_title))
       redirections[utility::RemoveTrailingTrash(alias)] = utility::RemoveTrailingTrash(target_title);
+
+#if COMMAND_LINE_INTERFACE_MODE == false
+    unordered_map<string, string> to_add;
+    for (const auto& p : redirections)
+      to_add[preprocess::LowerAsciiSingleLine(p.first)] = p.second;
+    for (const auto& p : to_add)
+      redirections.insert(p);
+#endif
+
     ifs.close();
   }
 

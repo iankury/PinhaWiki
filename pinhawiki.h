@@ -9,6 +9,7 @@ namespace utility {
 
   extern const string kPathPrefix;
   extern const char kSeparator;
+  extern const string kEmptyResult;
   extern unordered_map<int, int> compressed_chars;
   extern vector<string> invalid_substrings;
   extern unordered_set<string> common_terms;
