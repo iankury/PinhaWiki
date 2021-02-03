@@ -40,19 +40,24 @@ app.post('/open', (req, res) => {
   res.sendStatus(201)
 })
 
-app.get('/q/:data', (req, res) => {
-  if (req.params.data.length > 500) {
+app.get('/q?', (req, res) => {
+  const page = req.query.page
+  const query = req.query.query
+
+  if (query.length > 500) {
     console.log('Client tried to flood')
     return
   }
+
   if (!addon_ready) {
     console.log(`Trying to access addon when it's not ready`)
     return
   }
+
   addon_ready = false
-  const decoded_data = decode(req.params.data)
+  const decoded_data = decode(query)
   try {
-    const addon_answer = cpp_addon.HandleClientRequest(`${decoded_data}q`)
+    const addon_answer = cpp_addon.HandleClientRequest(`${decoded_data}p${page}q`)
     res.status(201).send(addon_answer)
     addon_ready = true
   }

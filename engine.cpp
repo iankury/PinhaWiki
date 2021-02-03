@@ -126,7 +126,7 @@ namespace indexer {
     return ans + "...";
   }
 
-  string Query(string query) {
+  string Query(string query, int page_number) {
     unordered_map<int, float> score; // Similarity between each document and the query
     unordered_map<int, float> numerators;
 
@@ -202,6 +202,9 @@ namespace indexer {
     unordered_set<string> visited; // Try to make sure there are no duplicate results
 
     string ans;
+
+    int results_to_skip = 10 * page_number;
+    int results_added = 0;
     for (int j : ranking) {
       // ↓ Handle duplicates
       const string processed_title = preprocess::LowerAsciiSingleLine(original_titles[j]);
@@ -209,6 +212,10 @@ namespace indexer {
         continue;
       visited.insert(processed_title);
 
+      if (--results_to_skip >= 0)
+        continue;
+
+      ++results_added;
       // ↓ Send the article names to the frontend
       ans += original_titles[j];
       ans.push_back(utility::kSeparator);
@@ -229,7 +236,7 @@ namespace indexer {
         ans += "perfeita";
       ans.push_back(utility::kSeparator);
 
-      if (visited.size() >= 10) // Keep only top results
+      if (results_added >= 10)
         break;
     }
 

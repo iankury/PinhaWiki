@@ -138,7 +138,7 @@ img {
 
 #results_container {
   display: none;
-  padding: 20px 0 200px 0;
+  padding: 20px 0 20px 0;
 }
 
 #loading_gif {
@@ -155,4 +155,19 @@ img {
 
 .result {
   padding-bottom: 20px;
+}
+
+#load_more_container {
+  display: none;
+  width: 100%;
+  justify-content: center;
+  padding-bottom: 200px;
+}
+
+#btn_load_more {
+  font-size: 17px;
+  padding: 10 35 10 35;
+  cursor: pointer;
+  border: 2px solid black;
+  border-radius: 10px;
 }

@@ -1,6 +1,6 @@
 const SEPARATOR = String.fromCharCode(30)
 const WIKI_URL = 'https://pt.wikipedia.org/wiki/'
-let last_query, virgin = true
+let virgin = true, current_query, current_page = 0
 const encode = s => s.split('').map(x => x.charCodeAt(0)).join('a')
 
 $(document).ready(Load)
@@ -14,11 +14,16 @@ function Main() {
   $('#search_box').show()
   $('#search_box').focus()
   $('#search_box').on('keydown', Keydown)
+  $('#btn_load_more').on('click', LoadMore)
 }
 
 function DisplayResponse(res) {
-  $('#results_container').empty()
+  if (current_page == 0)
+    $('#results_container').empty()
   const tokens = res.split(SEPARATOR)
+
+  if (tokens.length < 3)
+    return
 
   for (i = 0; i < tokens.length; i += 3) {
     const link = WIKI_URL + encodeURI(tokens[i])
@@ -32,25 +37,36 @@ function DisplayResponse(res) {
       </div>
     </div>`))
   }
-  $('#results_container').scrollTop(0)
+  $('#load_more_container').css('display', 'flex')
+
+  if (current_page > 0) {
+    window.scrollBy(0, 200)
+  }
 }
 
 function SendQuery() {
-  const encoded_data = encode(last_query)
-  $.get(`q/${encoded_data}`, DisplayResponse)
+  const encoded_data = encode(current_query)
+  $.get(`q?page=${current_page}&query=${encoded_data}`, DisplayResponse)
 }
 
 function Keydown(e) {
   if (e.keyCode == 13) {
-    last_query = $('#search_box').val()
+    current_query = $('#search_box').val()
     $('#search_box').val('')
-    if (!last_query)
+    if (!current_query)
       return
-    $('#results_title').text(`Resultados da consulta "${last_query}":`)
+    current_page = 0
+    $('#results_title').text(`Resultados da consulta "${current_query}":`)
     if (virgin) {
       virgin = false
       document.querySelector('style').textContent += results_styling
     }
     SendQuery()
   }
+}
+
+function LoadMore() {
+  $('#load_more_container').css('display', 'none')
+  ++current_page
+  SendQuery()
 }

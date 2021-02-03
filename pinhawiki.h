@@ -77,7 +77,7 @@ namespace indexer {
 
   // ↓ Engine
   void LoadEngine();
-  string Query(string query);
+  string Query(string query, int page_number);
 }
 
 namespace command_line_interface {
