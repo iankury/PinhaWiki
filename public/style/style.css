@@ -171,3 +171,7 @@ img {
   border: 2px solid black;
   border-radius: 10px;
 }
+
+.snippet {
+  line-height: 28px;
+}

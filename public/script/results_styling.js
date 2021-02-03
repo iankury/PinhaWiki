@@ -79,4 +79,10 @@ const results_styling = `
   #results_title {
     font-size: 14px;
   }
+
+  .similarity_label {
+    font-size: 12px;
+    color: grey;
+    padding: 0 0 15 20;
+  }
 }`
