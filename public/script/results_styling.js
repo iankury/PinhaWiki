@@ -53,11 +53,11 @@ const results_styling = `
 }
 
 @media (max-width: 767px) {
-  .search_header {
+  #search_header {
     flex-direction: column;
   }
 
-    .search_header img {
+    #search_header img {
       width: 170px;
       margin: 20px 0 0 0;
     }
