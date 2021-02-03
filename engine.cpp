@@ -75,6 +75,8 @@ namespace indexer {
     stringstream ss(text);
     string word;
     while (ss >> word) {
+      if (word.find("&lt;") != string::npos || word.find("&#60;") != string::npos)
+        continue;
       const string processed_word = 
         preprocess::StripWhitespaceSingleLine(
           preprocess::AlphaSingleLine(
@@ -215,11 +217,15 @@ namespace indexer {
       ans.push_back(utility::kSeparator);
 
       // ↓ Send the cosine to the frontend
-      stringstream converter;
-      converter << fixed << setprecision(2) << score[j];
-      string str_sim;
-      converter >> str_sim;
-      ans += str_sim;
+      if (score[j] < 98) {
+        stringstream converter;
+        converter << fixed << setprecision(2) << score[j];
+        string str_sim;
+        converter >> str_sim;
+        ans += str_sim;
+      }
+      else
+        ans += "perfect match";
       ans.push_back(utility::kSeparator);
 
       if (visited.size() >= 10) // Keep only top results
