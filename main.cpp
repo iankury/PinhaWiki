@@ -1,14 +1,3 @@
-/*
-Source of the main Information Retrieval techniques applied here and
-theoretical groundwork for the model chosen (Vector Space Model),
-particularly the formulas for computing TF-IDF weights and
-document-query similarity scores:
-
-BAEZA-YATES, Ricardo; RIBEIRO-NETO, Berthier.
-Recuperação de Informação: Conceitos e tecnologia das máquinas de busca.
-2. ed. Porto Alegre: Bookman, 2013. 590 p. ISBN 978-85-8260-049-8. E-book.
-*/
-
 #include "pinhawiki.h"
 
 #define COMMAND_LINE_INTERFACE_MODE false
