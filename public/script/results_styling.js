@@ -52,7 +52,7 @@ const results_styling = `
   margin: 10px 0px;
 }
 
-#github_link {
+#external_links_container {
   display: none;
 }
 
@@ -89,6 +89,4 @@ const results_styling = `
     color: grey;
     padding: 0 0 15 20;
   }
-
-  
 }`
