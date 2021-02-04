@@ -1,8 +1,4 @@
-HTML and CSS by Maria Kury, C++ and Javascript by Ian Kury
-
 PinhaWiki is an Information Retrieval project with the following purposes: testing/demonstrating my programming skills; practicing newly learned Information Retrieval concepts; serving as proof of concept of the Vector Space Model.
-
-It is not a commercial project, and some key aspects of a real-world project are outside of its scope (e. g. system security).
 
 The main source of Information Retrieval theory I've studied for this project (e. g. for weighting, modelling, indexing, scoring...) is the following ebook:
 
@@ -10,7 +6,7 @@ BAEZA-YATES, Ricardo; RIBEIRO-NETO, Berthier. Recuperação de Informação: Con
 
 https://www.amazon.com/Recupera%C3%A7%C3%A3o-Informa%C3%A7%C3%A3o-Conceitos-Tecnologia-Portuguese-ebook/dp/B0176RV7H4
 
-PinhaWiki is a search engine whose universe of action is strictly within the bounds of the Portuguese language version of Wikipedia (and the data used are not guaranteed to be the latest).
+PinhaWiki is a search engine whose universe of action is strictly within the bounds of the Portuguese language version of Wikipedia.
 
 You can use the engine directly (making queries of up to 50 chars) here: https://pinhata.wiki.br
 
