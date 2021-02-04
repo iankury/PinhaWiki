@@ -75,7 +75,7 @@ namespace indexer {
     stringstream ss(text);
     string word;
     while (ss >> word) {
-      if (word.find("&lt;") != string::npos || word.find("&#60;") != string::npos)
+      if (word.find("&lt;") != string::npos || word.find("&gt;") != string::npos)
         continue;
       const string processed_word = 
         preprocess::StripWhitespaceSingleLine(
@@ -233,7 +233,7 @@ namespace indexer {
         ans += str_sim;
       }
       else
-        ans += "perfeita";
+        ans += "max";
       ans.push_back(utility::kSeparator);
 
       if (results_added >= 10)

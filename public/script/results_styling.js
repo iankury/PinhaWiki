@@ -52,6 +52,10 @@ const results_styling = `
   margin: 10px 0px;
 }
 
+#github_link {
+  display: none;
+}
+
 @media (max-width: 767px) {
   #search_header {
     flex-direction: column;
@@ -85,4 +89,6 @@ const results_styling = `
     color: grey;
     padding: 0 0 15 20;
   }
+
+  
 }`

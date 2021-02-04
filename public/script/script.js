@@ -31,7 +31,7 @@ function DisplayResponse(res) {
       <a class="result_link" href="${link}" target="_blank">${ tokens[i]}</a>
       <div class="snippet">
         <p class="similarity_label">
-          Semelhança entre documento e consulta: ${tokens[i + 2]}
+          Vector space score: ${tokens[i + 2]}
         </p>
         ${tokens[i + 1]}
       </div>
@@ -56,7 +56,7 @@ function Keydown(e) {
     if (!current_query)
       return
     current_page = 0
-    $('#results_title').text(`Resultados da consulta "${current_query}":`)
+    $('#results_title').text(`Results for query "${current_query}":`)
     if (virgin) {
       virgin = false
       document.querySelector('style').textContent += results_styling
