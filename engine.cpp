@@ -38,7 +38,7 @@ namespace indexer {
     for (int i = 0; i <= term_id - first_term_id_in_file[file_id]; i++)
       getline(ifs, s);
 
-    size_t sz;
+    int sz;
     stringstream ss(s);
     ss >> sz;
 
@@ -65,9 +65,32 @@ namespace indexer {
     return s;
   }
 
-  string Snippet(int title_id, const string& text, const vector<string>& query_terms) {
+  vector<string> QueryTerms(string query) {
+    vector<string> query_terms;
+
+    query = preprocess::AlphaSingleLine(query);
+    string term;
+    stringstream ss(query);
+    while (ss >> term)
+      query_terms.push_back(term);
+
+    return query_terms;
+  }
+
+  bool ContainsAsSubword(const string& parent, const string& child) {
+    stringstream ss(parent);
+    string token;
+    while (ss >> token)
+      if (child == token)
+        return true;
+    return false;
+  }
+
+  string Snippet(int title_id, const string& text, const string& query) {
     string ans = "... ";
 
+    vector<string> query_terms = QueryTerms(query);
+   
     deque<string> cur, best;
     deque<bool> occ_q, best_occ_q;
     int occurrences = 0, best_occurrences = 0;
@@ -77,19 +100,15 @@ namespace indexer {
     while (ss >> word) {
       if (word.find("&lt;") != string::npos || word.find("&gt;") != string::npos)
         continue;
-      const string processed_word = 
-        preprocess::StripWhitespaceSingleLine(
-          preprocess::AlphaSingleLine(
-            preprocess::LowerAsciiSingleLine(word)
-          )
-        );
+      const string processed_word = preprocess::StripWhitespaceSingleLine(
+        preprocess::AlphaSingleLine(preprocess::LowerAsciiSingleLine(word))
+      );
       bool match = false;
-      for (const string& term : query_terms) {
-        if (term == processed_word) {
+      for (const string& term : query_terms) 
+        if (ContainsAsSubword(processed_word, term)) {
           match = true;
           break;
         }
-      }
       cur.push_back(word);
       occ_q.push_back(match);
       if (match)
@@ -101,7 +120,7 @@ namespace indexer {
         cur.pop_front();
       }
       middle_score = 0;
-      for (int i = 13; i < 22 && i < occ_q.size(); i++)
+      for (int i = 13; i < 22 && i < int(occ_q.size()); i++)
         middle_score += int{ occ_q[i] };
       if (
         best_occurrences < occurrences ||
@@ -118,7 +137,7 @@ namespace indexer {
     if (best_occurrences == 0)
       return "-";
 
-    for (int i = 0; i < best.size(); i++) {
+    for (int i = 0; i < int(best.size()); i++) {
       word = best_occ_q[i] ? "<b>" + best[i] + "</b>" : best[i];
       ans += word + " ";
     }
@@ -138,13 +157,25 @@ namespace indexer {
     auto ranking = set<int, decltype(comp)>(comp); // Stores results sorted by score
 
     unordered_set<int> query_ids;
-    vector<string> query_terms;
 
     stringstream ss(query);
     string term;
 
     // ↓ Build query_ids and filter query terms
     while (ss >> term) {
+      // ↓ Also search by pieces when there is a hyphen
+      if (term.find_first_of('-') != string::npos) {
+        stringstream ssx(preprocess::AlphaSingleLine(term));
+        string token;
+        while (ssx >> token) {
+          if (!term_to_id.count(token))
+            continue;
+          const int ix = term_to_id[token];
+          if (IDF[ix] >= 1) 
+            query_ids.insert(ix);
+        }
+      }
+
       if (!term_to_id.count(term)) // Term doesn't exist in collection
         continue;
 
@@ -154,7 +185,6 @@ namespace indexer {
         continue;
 
       query_ids.insert(i);
-      query_terms.push_back(term);
     }
 
     // ↓ Get info from relevant documents only (connected to query terms)
@@ -221,7 +251,7 @@ namespace indexer {
       ans.push_back(utility::kSeparator);
 
       // ↓ Send the snippet to the frontend
-      ans += Snippet(j, TextForSnippets(j), query_terms);
+      ans += Snippet(j, TextForSnippets(j), query);
       ans.push_back(utility::kSeparator);
 
       // ↓ Send the cosine to the frontend

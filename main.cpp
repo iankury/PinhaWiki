@@ -41,7 +41,7 @@ string HandleClientRequest(string req) {
   else if (req_type == 'q') {
     const int p_idx = req.find_last_of('p');
     const int page_number = stoi(req.substr(p_idx + 1));
-    while (req.length() > p_idx)
+    while (int(req.length()) > p_idx)
       req.pop_back();
 
     const string processed_query = preprocess::LowerAsciiSingleLine(req);

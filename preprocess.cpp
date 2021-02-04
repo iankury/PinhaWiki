@@ -4,7 +4,7 @@ namespace preprocess {
   string StripWhitespaceSingleLine(string s) {
     while (!s.empty() && isspace(s.back()))
       s.pop_back();
-    for (int i = 0; i < s.length(); i++)
+    for (int i = 0; i < int(s.length()); i++)
       if (!isspace(s[i])) {
         if (i > 0)
           s = s.substr(i);
@@ -22,7 +22,7 @@ namespace preprocess {
     while (getline(ifs, s)) {
       while (!s.empty() && isspace(s.back()))
         s.pop_back();
-      for (int i = 0; i < s.length(); i++)
+      for (int i = 0; i < int(s.length()); i++)
         if (!isspace(s[i])) {
           if (i > 0)
             s = s.substr(i);
@@ -58,7 +58,7 @@ namespace preprocess {
             const int idx = it - s.begin();
             int i = idx + 9, depth = 0;
             string target_title;
-            while (i < s.length() && (depth < 2 || s[i] != ']')) {
+            while (i < int(s.length()) && (depth < 2 || s[i] != ']')) {
               if (depth == 2)
                 target_title.push_back(s[i]);
               else if (s[i] == '[')
@@ -198,7 +198,7 @@ namespace preprocess {
 
   string LowerAsciiSingleLine(const string& line) {
     string ans;
-    for (int i = 0; i < line.length(); i++) {
+    for (int i = 0; i < int(line.length()); i++) {
       if (line[i] == -61) {
         ++i;
         const int code = ((int)line[i] + 255) % 255;
@@ -232,7 +232,7 @@ namespace preprocess {
   string AlphaSingleLine(const string& s) {
     string ans;
     bool last_is_space = false;
-    for (int i = 0; i < s.length(); i++) {
+    for (int i = 0; i < int(s.length()); i++) {
       if (isalpha(s[i]) || s[i] == '\n') {
         last_is_space = false;
         ans.push_back(s[i]);

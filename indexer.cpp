@@ -44,7 +44,7 @@ namespace indexer {
   }
 
   void BuildIDF() {
-    for (int i = 0; i < M; i++)
+    for (int i = 0; i < int(M); i++)
       IDF[i] = ComputeIDF(i);
   }
 
@@ -91,7 +91,7 @@ namespace indexer {
     ifstream ifs(utility::Path("terms"));
     string term;
     int id = -1;
-    while (++id < M) {
+    while (++id < int(M)) {
       if (!(ifs >> term >> TF[id]))
         break;
       term_to_id[term] = id;
@@ -144,7 +144,7 @@ namespace indexer {
     inverted_index.resize(M);
     string line;
     int sz, j, w;
-    for (int i = 0; i < M; i++) {
+    for (int i = 0; i < int(M); i++) {
       getline(ifs, line);
       stringstream ss(line);
       ss >> sz;
@@ -161,7 +161,7 @@ namespace indexer {
 
   void SaveIndex() {
     ofstream ofs(utility::Path("index"));
-    for (int i = 0; i < M; i++) {
+    for (int i = 0; i < int(M); i++) {
       const size_t sz = inverted_index[i].size();
       ofs << sz;
       for (size_t k = 0; k < sz; k++) {
@@ -176,7 +176,7 @@ namespace indexer {
     ifstream ifs(utility::Path("vector_norms"));
 
     vector_norms.resize(N);
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < int(N); i++)
       ifs >> vector_norms[i];
 
     ifs.close();
@@ -184,7 +184,7 @@ namespace indexer {
 
   void SaveNorms() {
     ofstream ofs(utility::Path("vector_norms"));
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < int(N); i++)
       ofs << fixed << setprecision(2) << vector_norms[i] << "\n";
     ofs.close();
   }
@@ -212,7 +212,7 @@ namespace indexer {
   }
 
   void BuildTitleToId() {
-    for (int i = 0; i < N; i++) 
+    for (int i = 0; i < int(N); i++) 
       title_to_id[titles[i]] = i;
   }
 
@@ -240,7 +240,7 @@ namespace indexer {
 
     string line, term;
 
-    for (int j = 0; j < N && getline(ifs, line); j++) { // For each document j
+    for (int j = 0; j < int(N) && getline(ifs, line); j++) { // For each document j
       stringstream ss(line), sst(titles[j]);
 
       // ↓ Term Frequency for each term i in this document
@@ -308,7 +308,7 @@ namespace indexer {
     vector<int> inverted_index_sizes(M);
     for (const auto& p : w) 
       inverted_index_sizes[p.first.first]++;
-    for (int i = 0; i < M; i++)
+    for (int i = 0; i < int(M); i++)
       inverted_index[i].resize(inverted_index_sizes[i]);
 
     vector<int> inverted_index_current_position(M);
@@ -328,7 +328,7 @@ namespace indexer {
 
       vector_norms[j] += (float)weight * weight;
     }
-    for (int j = 0; j < vector_norms.size(); j++)
+    for (int j = 0; j < int(vector_norms.size()); j++)
       vector_norms[j] = PunishTinyDocs(term_count_in_doc[j], sqrtf(vector_norms[j]));
   }
 
