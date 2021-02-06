@@ -12,8 +12,8 @@ namespace command_line_interface {
     cout << "preprocess -- executes preprocessing chain (requires raw.txt)\n";
     cout << "nows <path> -- strips leading/trailing whitespace\n";
     cout << "notrash <path> -- removes entries with trash titles, leaves only\n";
-    cout << "  page tags, and inside them only title tags and text (content),\n";
-    cout << "  also removes refs. Requires redirections.txt\n";
+    cout << "  page tags, and inside them only title tags and text (content)\n";
+    cout << "  Requires redirections.txt\n";
     cout << "split <path> -- writes titles to one file, articles to another\n";
     cout << "lower_ascii <path> -- makes each char lowercase and ASCII,\n";
     cout << "  but will keep non-Portuguese non-ASCII chars\n";
@@ -21,7 +21,6 @@ namespace command_line_interface {
     cout << "nocommon <path> -- deletes high-frequency words\n";
     cout << "nolong <path> -- deletes single-letter words and words of 15+ letters\n";
     cout << "noextreme <path> -- deletes terms with extreme freq (requires terms.txt)\n";
-    cout << "noxml <path> -- deletes '\"[]{} and | becomes space\n";
     cout << "split_index -- writes index to a lot of files,\n";
     cout << "  first term id for each file (requires index.txt)\n";
     cout << "split_text -- same as above but with text (requires text.txt)\n";
@@ -69,8 +68,6 @@ namespace command_line_interface {
       indexer::LoadTerms();
     else if (command == "noextreme")
       preprocess::DeleteExtremeFreq(filename);
-    else if (command == "noxml")
-      preprocess::NoXml(filename);
     else if (command == "split_index")
       preprocess::SplitIndex();
     else if (command == "split_text")

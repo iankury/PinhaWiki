@@ -7,6 +7,7 @@ namespace utility {
     "Conjunto vazio" + string{ kSeparator } +
     "-" + string{ kSeparator } + "0"
   );
+  const int kSnippetSize = 35;
 
   unordered_map<int, int> compressed_chars{
     { 128, 65 }, { 136, 69 }, { 140, 73 }, { 146, 79 }, { 153, 85 }, { 127, 65 },
@@ -19,6 +20,12 @@ namespace utility {
   vector<string> invalid_substrings{
     "Categoria:", "dia:", "Predefini", "Ficheiro:", "Portal:", "Anexo:", 
     "pico:", "MediaWiki:", "dulo:", "Ajuda:", "Livro:"
+  };
+
+  unordered_set<string> mega_common_terms{
+    "de", "a", "o", "que", "e", "do", "da", "em", "um", "para",
+    "com", "uma", "os", "no", "se", "na", "por", "as", "dos",
+    "mas", "ao", "ele", "das", "tem", "seu", "sua", "ou"
   };
 
   unordered_set<string> common_terms{
@@ -64,9 +71,6 @@ namespace utility {
 
   int ValidTitle(const string& title) {
     const string processed_title = RemoveTrailingTrash(title);
-
-    if (processed_title.length() == 0)
-      return EMPTY_TITLE;
 
     if (processed_title[0] == '(')
       return PARENTHESIS_START;

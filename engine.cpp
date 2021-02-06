@@ -50,6 +50,8 @@ namespace indexer {
     return ans;
   }
 
+  int virgin = 0;
+
   string TextForSnippets(int title_id) {
     string s;
 
@@ -62,6 +64,12 @@ namespace indexer {
       for (int i = 0; i <= title_id - first_title_id_in_file[file_id]; i++)
         getline(ifs, s);
 
+    if (++virgin == 1) {
+      ofstream ofs(utility::Path("log"));
+      ofs << s << "\n";
+      ofs.close();
+    }
+
     return s;
   }
 
@@ -71,8 +79,9 @@ namespace indexer {
     query = preprocess::AlphaSingleLine(query);
     string term;
     stringstream ss(query);
-    while (ss >> term)
-      query_terms.push_back(term);
+    while (ss >> term) 
+      if (!utility::mega_common_terms.count(term))
+        query_terms.push_back(term);
 
     return query_terms;
   }
@@ -86,8 +95,8 @@ namespace indexer {
     return false;
   }
 
-  string Snippet(int title_id, const string& text, const string& query) {
-    string ans = "... ";
+  string Snippet(int title_id, const string& text, const string& query, bool start) {
+    string ans = start ? "" : "... ";
 
     vector<string> query_terms = QueryTerms(query);
    
@@ -98,8 +107,6 @@ namespace indexer {
     stringstream ss(text);
     string word;
     while (ss >> word) {
-      if (word.find("&lt;") != string::npos || word.find("&gt;") != string::npos)
-        continue;
       const string processed_word = preprocess::StripWhitespaceSingleLine(
         preprocess::AlphaSingleLine(preprocess::LowerAsciiSingleLine(word))
       );
@@ -113,25 +120,34 @@ namespace indexer {
       occ_q.push_back(match);
       if (match)
         ++occurrences;
-      if (cur.size() > 35) {
+      if (cur.size() > utility::kSnippetSize) {
         if (occ_q.front())
           --occurrences;
         occ_q.pop_front();
         cur.pop_front();
       }
       middle_score = 0;
-      for (int i = 13; i < 22 && i < int(occ_q.size()); i++)
+      for (
+        int i = utility::kSnippetSize / 2 - 4; 
+        i <= utility::kSnippetSize / 2 + 4 && 
+        i < int(occ_q.size()); 
+        i++)
         middle_score += int{ occ_q[i] };
       if (
         best_occurrences < occurrences ||
         (best_occurrences == occurrences && cur.size() > best.size()) ||
-        (best_occurrences == occurrences && cur.size() == 35 && middle_score > best_middle_score)
-        ) {
+          (
+            best_occurrences == occurrences && 
+            cur.size() == utility::kSnippetSize && 
+            middle_score > best_middle_score
+          )) {
         best_occurrences = occurrences;
         best = cur;
         best_occ_q = occ_q;
         best_middle_score = middle_score;
       }
+      if (start && cur.size() == utility::kSnippetSize)
+        break;
     }
 
     if (best_occurrences == 0)
@@ -202,12 +218,14 @@ namespace indexer {
       ranking.insert(j);
     }
 
+    int perfect_match = -1;
     // ↓ First base case: perfect match
     if (title_to_id.count(query)) {
       const int j = title_to_id[query];
       ranking.erase(j);
       score[j] = 99.f;
       ranking.insert(j);
+      perfect_match = j;
     }
 
     // ↓ Second base case: there exists a redirection for this exact query
@@ -251,7 +269,7 @@ namespace indexer {
       ans.push_back(utility::kSeparator);
 
       // ↓ Send the snippet to the frontend
-      ans += Snippet(j, TextForSnippets(j), query);
+      ans += Snippet(j, TextForSnippets(j), query, perfect_match == j);
       ans.push_back(utility::kSeparator);
 
       // ↓ Send the cosine to the frontend

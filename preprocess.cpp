@@ -36,6 +36,32 @@ namespace preprocess {
     utility::PrintElapsedTime(initial_time);
   }
 
+  bool EveryCharEquals(const string& s, char cx) {
+    for (char c : s)
+      if (!isspace(c) && c != cx)
+        return false;
+    return true;
+  }
+
+  string KillCharStreaks(const string& s, char c) {
+    if (s.empty())
+      return "";
+
+    string ans;
+
+    for (int i = 0; i < int(s.length()); i++) {
+      if (s[i] == c) {
+        if (i > 0 && s[i - 1] == c)
+          continue;
+        if (i + 1 < int(s.length()) && s[i + 1] == c)
+          continue;
+      }
+      ans.push_back(s[i]);
+    }
+    
+    return ans;
+  }
+
   void WriteRedirections(const string& filename) {
     double initial_time = clock();
 
@@ -84,6 +110,135 @@ namespace preprocess {
     utility::PrintElapsedTime(initial_time);
   }
 
+  string KillDeepParts(const string& s) {
+    string ans, str_buffer;
+    ans.reserve(s.length());
+    int depth = 0, tag_depth = 0;
+
+    for (int i = 0; i < int(s.length()); i++) {
+      const char c = s[i];
+      if (c == '[' || c == '{') {
+        ++depth;
+        continue;
+      }
+      else if (c == ']' || c == '}') {
+        --depth;
+        continue;
+      }
+
+      if (c == '&' && (i + 3) < s.length()) {
+        const string tag_check = s.substr(i, 4);
+        if (tag_check == "&lt;" || tag_check == "&gt;") {
+          if (tag_check[1] == 'l')
+            ++tag_depth;
+          else
+            --tag_depth;
+          ans += tag_check;
+          i += 3;
+          continue;
+        }
+      }
+      
+      if (tag_depth > 0)
+        ans.push_back(c);
+      else if (depth > 0)
+        str_buffer.push_back(c);
+      else {
+        if (!str_buffer.empty()) {
+          if (
+            str_buffer.find_first_of(':') == string::npos &&
+            str_buffer.find_first_of('=') == string::npos &&
+            str_buffer.find("http") == string::npos &&
+            str_buffer.find("col-") == string::npos) {
+            auto ix = str_buffer.find_last_of('|');
+            if (ix != string::npos)
+              str_buffer = str_buffer.substr(ix + 1);
+            ans += str_buffer;
+          }
+          str_buffer.clear();
+        }
+        ans.push_back(c);
+      }
+    }
+
+    if (depth == 0 && !str_buffer.empty()) {
+      if (
+        str_buffer.find_first_of(':') == string::npos &&
+        str_buffer.find_first_of('=') == string::npos &&
+        str_buffer.find("http") == string::npos &&
+        str_buffer.find("col-") == string::npos) {
+        auto ix = str_buffer.find_last_of('|');
+        if (ix != string::npos)
+          str_buffer = str_buffer.substr(ix + 1);
+        ans += str_buffer;
+      }
+    }
+
+    return ans;
+  }
+
+  string KillTags(string s) {
+    if (s.empty())
+      return "";
+
+    size_t last_length = s.length();
+    while (!s.empty()) {
+      auto j = s.find("&lt;/");
+      if (j == string::npos)
+        break;
+      auto k = s.find("&gt;", j);
+      string tag_name;
+      for (auto i = j + 5; i < k && s[i] != '/' && !isspace(s[i]); i++)
+        tag_name.push_back(s[i]);
+      if (tag_name.empty())
+        return "ErrorTagEmpty";
+      auto i = s.find("&lt;" + tag_name);
+      if (i == string::npos) 
+        s = k == string::npos ? "" : s.substr(k + 4);
+      else
+        s = s.substr(0, i) + (k == string::npos ? "" : s.substr(k + 4));
+      if (s.length() >= last_length)
+        return "ErrorLengthNotDecreasing";
+      last_length = s.length();
+    }
+
+    while (!s.empty()) {
+      auto i = s.find("&lt;");
+      if (i == string::npos)
+        break;
+      auto j = s.find("&gt;", i);
+      if (j == string::npos)
+        s = s.substr(0, i);
+      else
+        s = s.substr(0, i) + s.substr(j + 4);
+      if (s.length() >= last_length)
+        return "ErrorLengthNotDecreasing";
+      last_length = s.length();
+    }
+
+    return s;
+  }
+
+  string HandleXml(string s) {
+    s = KillTags(KillDeepParts(s));
+
+    string ans, word;
+    stringstream ss(s);
+    while (ss >> word) {
+      if (
+        EveryCharEquals(word, '=') ||
+        EveryCharEquals(word, '*') ||
+        word.find("http") != string::npos)
+        continue;
+      ans += KillCharStreaks(KillCharStreaks(word, '='), '\'') + " ";
+    }
+
+    if (!ans.empty())
+      ans.pop_back();
+
+    return ans;
+  }
+
   void RemoveTrash(const string& filename) {
     double initial_time = clock();
 
@@ -97,7 +252,7 @@ namespace preprocess {
     ofstream ofs(utility::Path("notrash"));
     string s;
     vector<string> cur_page;
-    bool skip = 1;
+    bool skip = true;
     while (getline(ifs, s)) {
       if (s == "<page>") {
         cur_page.clear();
@@ -117,10 +272,14 @@ namespace preprocess {
         }
         cur_page.push_back(s);
       }
-      else if (s.find("<text") != string::npos)
-        skip = 0;
-      else if (s.find("</text") != string::npos || s.find("{{Refer") != string::npos)
-        skip = 1;
+      else if (s.find("<text") != string::npos) {
+        skip = false;
+        auto i = s.find_first_of('>', s.find("<text"));
+        if (i + 1 < s.length())
+          cur_page.push_back(s.substr(i + 1));
+      }
+      else if (s.find("</text") != string::npos)
+        skip = true;
       else if (!skip)
         cur_page.push_back(s);
     }
@@ -129,7 +288,6 @@ namespace preprocess {
     ofs.close();
 
     cout << "Found " << title_stats[utility::GOOD_TITLE] << " good titles,\n";
-    cout << "      " << title_stats[utility::EMPTY_TITLE] << " empty titles,\n";
     cout << "      " << title_stats[utility::PARENTHESIS_START] << " (-started titles,\n";
     cout << "      " << title_stats[utility::REDIRECTED_TITLE] << " redirected titles,\n";
     cout << "      " << title_stats[utility::CONTAINS_INVALID] << " invalid-substr titles,\n";
@@ -176,7 +334,7 @@ namespace preprocess {
     double initial_time = clock();
 
     ifstream ifs(filename);
-    ofstream ofs(utility::Path("articles"));
+    ofstream ofs(utility::Path("original_articles"));
     ofstream ofst(utility::Path("original_titles"));
     string s;
     while (getline(ifs, s)) {
@@ -192,6 +350,20 @@ namespace preprocess {
     ifs.close();
     ofs.close();
     ofst.close();
+
+    utility::PrintElapsedTime(initial_time);
+  }
+
+  void MakeArticlesNoXml(const string& filename) {
+    double initial_time = clock();
+
+    ifstream ifs(filename);
+    ofstream ofs(utility::Path("noxml_articles"));
+    string s;
+    while (getline(ifs, s))
+      ofs << HandleXml(s) << "\n";
+    ifs.close();
+    ofs.close();
 
     utility::PrintElapsedTime(initial_time);
   }
@@ -328,27 +500,6 @@ namespace preprocess {
     utility::PrintElapsedTime(initial_time);
   }
 
-  void NoXml(const string& filename) {
-    double initial_time = clock();
-
-    ifstream ifs(filename);
-    ofstream ofs(utility::Path("noxml"));
-    ifs >> noskipws;
-    ofs << noskipws;
-    char c;
-    while (ifs >> c) {
-      if (c == '|')
-        ofs << " ";
-      else if (c != '\'' && c != '[' && c != ']' && c != '{' && c != '}' && c != '"')
-        ofs << c;
-    }
-
-    ifs.close();
-    ofs.close();
-
-    utility::PrintElapsedTime(initial_time);
-  }
-
   void SplitIndex() {
     double initial_time = clock();
 
@@ -442,27 +593,28 @@ namespace preprocess {
   void FullPreprocessing() {
     double initial_time = clock();
 
-    cout << "Stripping whitespace from raw text.\n";
-    StripWhitespace(utility::Path("raw"));
+    //cout << "Stripping whitespace from raw text.\n";
+    //StripWhitespace(utility::Path("raw"));
 
     cout << "Writing redirections.\n";
     WriteRedirections(utility::Path("nows"));
 
-    cout << "Removing all tags except page and title\n";
-    cout << "  and refs and all entries with invalid titles.\n";
+    cout << "Removing all tags except page, title and content of text,\n";
+    cout << "  removing all entries with invalid titles.\n";
     RemoveTrash(utility::Path("nows"));
-    remove((utility::Path("nows")).c_str());
+    //remove((utility::Path("nows")).c_str());
 
     cout << "Writing titles to one file, articles to another.\n";
     SplitTitlesAndArticles(utility::Path("notrash"));
     remove((utility::Path("notrash")).c_str());
 
-    cout << "Making noxml version of articles.\n";
-    NoXml(utility::Path("articles"));
+    cout << "Getting rid of XML in articles.\n";
+    MakeArticlesNoXml(utility::Path("original_articles"));
+    //remove((utility::Path("original_articles")).c_str());
 
-    cout << "Making articles lowercase and ASCII.\n";
-    LowerAscii(utility::Path("articles"));
-    remove((utility::Path("articles")).c_str());
+    cout << "Making articles lowercase and ASCII\n";
+    cout << "But keeping noxml copy for texts.\n";
+    LowerAscii(utility::Path("noxml_articles"));
 
     cout << "Making articles letter-only.\n";
     Alpha(utility::Path("lower"));
@@ -487,7 +639,36 @@ namespace preprocess {
       (utility::Path("titles")).c_str()
     );
 
-    cout << "Finished preprocessing chain.\n";
+    rename(
+      (utility::Path("noxml_articles")).c_str(),
+      (utility::Path("text")).c_str()
+    );
+
+    cout << "Writing terms.\n";
+    indexer::SaveTerms();
+    cout << "Finished saving terms.\n";
+
+    cout << "Making noextreme version of articles.\n";
+    DeleteExtremeFreq(utility::Path("articles"));
+    remove((utility::Path("articles")).c_str());
+    rename(
+      (utility::Path("noextreme")).c_str(),
+      (utility::Path("articles")).c_str()
+    );
+    cout << "Finished making noextreme version of articles.\n";
+
+    indexer::FullBuild();
+    cout << "Finished building and saving index and norms.\n";
+
+    cout << "Splitting text.\n";
+    SplitText();
+    cout << "Finished splitting text.\n";
+
+    cout << "Splitting index.\n";
+    SplitIndex();
+    cout << "Finished splitting index.\n";
+
+    cout << "\nFinished preprocessing chain.\n";
     utility::PrintElapsedTime(initial_time);
   }
 }

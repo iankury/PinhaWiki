@@ -5,7 +5,6 @@
 #if COMMAND_LINE_INTERFACE_MODE
 
 int main() {
-
   command_line_interface::Run();
 
   return 0;

@@ -3,15 +3,17 @@ using namespace std;
 
 namespace utility {
   enum {
-    GOOD_TITLE, EMPTY_TITLE, PARENTHESIS_START, REDIRECTED_TITLE,
+    GOOD_TITLE, PARENTHESIS_START, REDIRECTED_TITLE,
     CONTAINS_INVALID, DISAMBIGUATION_TITLE
   };
 
   extern const string kPathPrefix;
   extern const char kSeparator;
   extern const string kEmptyResult;
+  extern const int kSnippetSize;
   extern unordered_map<int, int> compressed_chars;
   extern vector<string> invalid_substrings;
+  extern unordered_set<string> mega_common_terms;
   extern unordered_set<string> common_terms;
 
   string Path(const string& filename);
@@ -27,6 +29,8 @@ namespace utility {
 namespace preprocess {
   string StripWhitespaceSingleLine(string s);
   void StripWhitespace(const string& filename);
+  bool EveryCharEquals(const string& s, char cx);
+  string KillCharStreaks(const string& s, char c);
   void WriteRedirections(const string& filename);
   void RemoveTrash(const string& filename);
   void Head(const string& filename);
@@ -39,7 +43,6 @@ namespace preprocess {
   void DeleteCommon(const string& filename);
   void DeleteLong(const string& filename);
   void DeleteExtremeFreq(const string& filename);
-  void NoXml(const string& filename);
   void SplitIndex();
   void SplitText();
   void FullPreprocessing();

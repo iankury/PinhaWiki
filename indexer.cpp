@@ -51,6 +51,7 @@ namespace indexer {
   void LoadTitles() {
     ifstream ifs(utility::Path("titles"));
     string s;
+    titles.clear();
     while (getline(ifs, s)) 
       titles.push_back(utility::RemoveTrailingTrash(s));
     ifs.close();
@@ -61,6 +62,7 @@ namespace indexer {
   void LoadOriginalTitles() {
     ifstream ifs(utility::Path("original_titles"));
     string s;
+    original_titles.clear();
     while (getline(ifs, s))
       original_titles.push_back(utility::RemoveTrailingTrash(s));
     ifs.close();
@@ -69,16 +71,15 @@ namespace indexer {
   void LoadRedirections() {
     ifstream ifs(utility::Path("redirections"));
     string alias, target_title;
+    redirections.clear();
     while (getline(ifs, alias) && getline(ifs, target_title))
       redirections[utility::RemoveTrailingTrash(alias)] = utility::RemoveTrailingTrash(target_title);
 
-#if COMMAND_LINE_INTERFACE_MODE == false
     unordered_map<string, string> to_add;
     for (const auto& p : redirections)
       to_add[preprocess::LowerAsciiSingleLine(p.first)] = p.second;
     for (const auto& p : to_add)
       redirections.insert(p);
-#endif
 
     ifs.close();
   }
@@ -87,6 +88,8 @@ namespace indexer {
     M = utility::CountLines("terms");
     TF.resize(M);
     IDF.resize(M);
+
+    term_to_id.clear();
 
     ifstream ifs(utility::Path("terms"));
     string term;
@@ -141,6 +144,7 @@ namespace indexer {
   void LoadIndex() {
     ifstream ifs(utility::Path("index"));
 
+    inverted_index.clear();
     inverted_index.resize(M);
     string line;
     int sz, j, w;
@@ -192,6 +196,7 @@ namespace indexer {
   void LoadFirstTermIdInFile() {
     ifstream ifs(utility::Path("first_term_id_in_file"));
 
+    first_term_id_in_file.clear();
     int x;
     while (ifs >> x)
       first_term_id_in_file.push_back(x);
@@ -203,6 +208,7 @@ namespace indexer {
   void LoadFirstTitleIdInFile() {
     ifstream ifs(utility::Path("first_title_id_in_file"));
 
+    first_title_id_in_file.clear();
     int x;
     while (ifs >> x)
       first_title_id_in_file.push_back(x);
@@ -212,6 +218,7 @@ namespace indexer {
   }
 
   void BuildTitleToId() {
+    title_to_id.clear();
     for (int i = 0; i < int(N); i++) 
       title_to_id[titles[i]] = i;
   }
@@ -219,7 +226,7 @@ namespace indexer {
   inline double PunishTinyDocs(int doc_word_count, double vector_norm) {
     if (doc_word_count > 1500)
       return vector_norm;
-    const double c = .6 - .001 * max(0, 300 - doc_word_count);
+    const double c = .6 - .002 * min(250, max(0, 1000 - doc_word_count));
     const double m = (1. - c) / 1500.;
     return pow(vector_norm, 1. / (m * doc_word_count + c));
   }
@@ -329,7 +336,7 @@ namespace indexer {
       vector_norms[j] += (float)weight * weight;
     }
     for (int j = 0; j < int(vector_norms.size()); j++)
-      vector_norms[j] = PunishTinyDocs(term_count_in_doc[j], sqrtf(vector_norms[j]));
+      vector_norms[j] = sqrt(PunishTinyDocs(term_count_in_doc[j], vector_norms[j]));
   }
 
   void FullBuild() {
