@@ -19,7 +19,7 @@ If you want to build the whole project on your own computer:
 
 2) Clone the repo
 
-3) Download the raw data (XML) and save is as raw.txt (in the root)
+3) Download the raw data (XML) and save it as raw.txt (in the root)
 
 4) Use the CLI to preprocess the data (set COMMAND_LINE_INTERFACE_MODE to true in main.cpp, then compile C++ sources and run the command "preprocess")
 
