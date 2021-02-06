@@ -15,52 +15,14 @@ The project has a classic HTML-CSS-JS front-end, which communicates with a simpl
 
 If you want to build the whole project on your own computer:
 
-1) Clone the repo
+1) Download and install node (with npm), express and node-gyp
 
-2) Download the raw data (XML) and save is as raw.txt
+2) Clone the repo
 
-3) Preprocess the data
+3) Download the raw data (XML) and save is as raw.txt (in the root)
 
-4) Run the server
+4) Use the CLI to preprocess the data (set COMMAND_LINE_INTERFACE_MODE to true in main.cpp, then compile C++ sources and run the command "preprocess")
 
+5) Set COMMAND_LINE_INTERFACE_MODE to false in main.cpp, compile C++ sources using node-gyp (with command "node-gyp rebuild")
 
-Steps 3 and 4 consist of many parts, so I will go into a little more detail.
-
-There is a #define for COMMAND_LINE_INTERFACE_MODE in main.cpp.
-You should set this to true for all the preprocessing and for building/saving the index, and to false for compiling the addon that will be run inside the Node app.
-
-When you compile in CLI mode, you can run the console app and use the "help" command for a description of the available commands.
-
-When you run the command "preprocess", you are left with the following files:
-
-1) redirections.txt - list of pairs of { title to be redirected, target tile }. It's a DAG.
-
-2) articles.txt - heavily preprocessed text to be used for building the index.
-
-3) original_titles.txt - non-preprocessed titles to be used for building the links
-
-4) noxml.txt - lightly preprocessed text to be used for the snippets
-
-You should then run the command "save_terms" in order to get terms.txt.
-
-Then you may use "noextreme articles" in order to kill extreme (low and high) frequency terms (will make a new file; rename it to articles.txt to use it for the index).
-
-Run "full_build" to get the index. 
-
-Now we need to split the big files into a lot of small files (to be able to search without having everything in the RAM). You can preprocess noxml.txt a little further if you want (e. g. I just removed all words > 20 chars). The noxml file must be renamed as text.txt when you're done.
-Run "split_text" to split text.txt into a lot of small files (will go into the "text" directory).
-Run "split_index" to split index.txt into a lot of small files (will go into the "index" directory).
-
-Now we're done with the preprocessing and can run the server.
-
-You must have node (with npm) installed. 
-
-Go to the project root and install express (npm install express) and node-gyp.
-
-Set COMMAND_LINE_INTERFACE_MODE to false (in main.cpp).
-
-Compile the project from the project root through node-gyp (node-gyp rebuild).
-
-Now you can just run "node app" from the project root and open the local host in your browser to view the front-end.
-
-Please let me know if you find something missing in my explanation: iankwen@gmail.com
+6) Run the js app with "node app" and go to localhost in the browser
