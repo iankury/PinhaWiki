@@ -52,7 +52,7 @@ const results_styling = `
   margin: 10px 0px;
 }
 
-#external_links_container {
+#external_links_container, #general_info {
   display: none;
 }
 

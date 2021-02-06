@@ -207,6 +207,18 @@ img {
     box-shadow: inset 0 0 5px #333;
   }
 
+  #general_info {
+    font-size: 18px;
+    line-height: 26px;
+    position: absolute;
+    width: 30%;
+    text-align: justify;
+    bottom: 20%;
+    left: 50%;
+    z-index: 40;
+    transform: translate(-50%);
+  }
+
 @media (max-width: 767px) {
   #external_links_container {
     bottom: 0;
@@ -221,5 +233,9 @@ img {
 
   #github_link, #book_link {
     text-decoration: underline;
+  }
+
+  #general_info {
+    display: none;
   }
 }
