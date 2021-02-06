@@ -50,8 +50,6 @@ namespace indexer {
     return ans;
   }
 
-  int virgin = 0;
-
   string TextForSnippets(int title_id) {
     string s;
 
@@ -63,12 +61,6 @@ namespace indexer {
     if (ifs.good()) 
       for (int i = 0; i <= title_id - first_title_id_in_file[file_id]; i++)
         getline(ifs, s);
-
-    if (++virgin == 1) {
-      ofstream ofs(utility::Path("log"));
-      ofs << s << "\n";
-      ofs.close();
-    }
 
     return s;
   }
