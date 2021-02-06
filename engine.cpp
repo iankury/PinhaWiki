@@ -223,7 +223,7 @@ namespace indexer {
     // ↓ Second base case: there exists a redirection for this exact query
     if (redirections.count(query)) {
       string redirected_title = redirections[query];
-      while (redirections.count(redirected_title))
+      while (redirections.count(redirected_title)) 
         redirected_title = redirections[redirected_title];
       redirected_title = preprocess::LowerAsciiSingleLine(redirected_title);
       if (title_to_id.count(redirected_title) &&
@@ -236,7 +236,7 @@ namespace indexer {
     }
 
     // ↓ Third base case: no matches at all
-    else if (ranking.empty())
+    if (ranking.empty())
       return utility::kEmptyResult;
 
     unordered_set<string> visited; // Try to make sure there are no duplicate results

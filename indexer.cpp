@@ -76,8 +76,11 @@ namespace indexer {
       redirections[utility::RemoveTrailingTrash(alias)] = utility::RemoveTrailingTrash(target_title);
 
     unordered_map<string, string> to_add;
-    for (const auto& p : redirections)
-      to_add[preprocess::LowerAsciiSingleLine(p.first)] = p.second;
+    for (const auto& p : redirections) {
+      const string temp = preprocess::LowerAsciiSingleLine(p.first);
+      if (temp != p.second && !redirections.count(temp))
+        to_add[temp] = p.second;
+    }
     for (const auto& p : to_add)
       redirections.insert(p);
 
