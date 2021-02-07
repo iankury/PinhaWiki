@@ -32,6 +32,9 @@ namespace preprocess {
   bool EveryCharEquals(const string& s, char cx);
   string KillCharStreaks(const string& s, char c);
   void WriteRedirections(const string& filename);
+  string KillDeepParts(const string& s);
+  string KillTags(string s);
+  string HandleXml(string s);
   void RemoveTrash(const string& filename);
   void Head(const string& filename);
   void Head20k(const string& filename);

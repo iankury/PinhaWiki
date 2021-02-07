@@ -142,9 +142,6 @@ namespace indexer {
         break;
     }
 
-    if (best_occurrences == 0)
-      return "-";
-
     for (int i = 0; i < int(best.size()); i++) {
       word = best_occ_q[i] ? "<b>" + best[i] + "</b>" : best[i];
       ans += word + " ";

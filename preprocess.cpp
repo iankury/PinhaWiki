@@ -340,7 +340,8 @@ namespace preprocess {
     while (getline(ifs, s)) {
       if (s == "<page>") {
         getline(ifs, s);
-        ofst << s.substr(7, s.length() - 15) << "\n";
+        const string title = s.substr(7, s.length() - 15);
+        ofst << title << "\n";
       }
       else if (s == "</page>")
         ofs << "\n";
@@ -593,8 +594,8 @@ namespace preprocess {
   void FullPreprocessing() {
     double initial_time = clock();
 
-    //cout << "Stripping whitespace from raw text.\n";
-    //StripWhitespace(utility::Path("raw"));
+    cout << "Stripping whitespace from raw text.\n";
+    StripWhitespace(utility::Path("raw"));
 
     cout << "Writing redirections.\n";
     WriteRedirections(utility::Path("nows"));
@@ -602,7 +603,7 @@ namespace preprocess {
     cout << "Removing all tags except page, title and content of text,\n";
     cout << "  removing all entries with invalid titles.\n";
     RemoveTrash(utility::Path("nows"));
-    //remove((utility::Path("nows")).c_str());
+    remove((utility::Path("nows")).c_str());
 
     cout << "Writing titles to one file, articles to another.\n";
     SplitTitlesAndArticles(utility::Path("notrash"));
@@ -610,7 +611,7 @@ namespace preprocess {
 
     cout << "Getting rid of XML in articles.\n";
     MakeArticlesNoXml(utility::Path("original_articles"));
-    //remove((utility::Path("original_articles")).c_str());
+    remove((utility::Path("original_articles")).c_str());
 
     cout << "Making articles lowercase and ASCII\n";
     cout << "But keeping noxml copy for texts.\n";
