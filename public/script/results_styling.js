@@ -52,11 +52,20 @@ const results_styling = `
   margin: 10px 0px;
 }
 
-#external_links_container, #general_info {
+#general_info {
   display: none;
 }
 
+#external_links_container {
+  flex-direction: column-reverse;
+  align-items: flex-end;
+}
+
 @media (max-width: 767px) {
+  #external_links_container {
+    display: none;
+  }
+
   #search_header {
     flex-direction: column;
   }
