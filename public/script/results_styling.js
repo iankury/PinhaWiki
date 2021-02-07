@@ -60,7 +60,6 @@ const results_styling = `
   flex-direction: column-reverse;
   align-items: flex-end;
   width: auto;
-  background-color: cyan;
 }
 
 @media (max-width: 767px) {
