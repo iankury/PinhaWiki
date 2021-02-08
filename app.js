@@ -1,5 +1,7 @@
 const cpp_addon = require('./build/Release/pinhawiki')
 const express = require('express'), app = express()
+const SEPARATOR = String.fromCharCode(30)
+const over_limit_msg = `Error${SEPARATOR}Maximum query size exceeded${SEPARATOR}0.00`
 
 function Exit(s) {
   console.log(s)
@@ -44,18 +46,24 @@ app.get('/q?', (req, res) => {
   const page = req.query.page
   const query = req.query.query
 
-  if (query.length > 500) {
-    console.log('Client tried to flood')
-    return
-  }
-
   if (!addon_ready) {
     console.log(`Trying to access addon when it's not ready`)
     return
   }
 
-  addon_ready = false
+  if (query.length > 500) {
+    res.status(201).send(over_limit_msg)
+    return
+  }
+
   const decoded_data = decode(query)
+  if (decoded_data.length > 50) {
+    res.status(201).send(over_limit_msg)
+    return
+  }
+
+  addon_ready = false
+
   try {
     const addon_answer = cpp_addon.HandleClientRequest(`${decoded_data}p${page}q`)
     res.status(201).send(addon_answer)
