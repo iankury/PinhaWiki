@@ -18,12 +18,12 @@ function Main() {
 }
 
 function DisplayResponse(res) {
-  if (current_page == 0)
-    $('#results_container').empty()
   const tokens = res.split(SEPARATOR)
 
   if (tokens.length < 3)
     return
+
+  $('#results_title').text(`Results for query "${current_query}":`)
 
   for (i = 0; i < tokens.length; i += 3) {
     const link = WIKI_URL + encodeURI(tokens[i])
@@ -55,8 +55,10 @@ function Keydown(e) {
     $('#search_box').val('')
     if (!current_query)
       return
+    $('#results_container').empty()
+    $('#results_title').text('')
+    $('#load_more_container').css('display', 'none')
     current_page = 0
-    $('#results_title').text(`Results for query "${current_query}":`)
     if (virgin) {
       virgin = false
       document.querySelector('style').textContent += results_styling
