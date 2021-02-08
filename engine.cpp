@@ -242,6 +242,7 @@ namespace indexer {
 
     int results_to_skip = 10 * page_number;
     int results_added = 0;
+    int last_result = *ranking.rbegin();
     for (int j : ranking) {
       // ↓ Handle duplicates
       const string processed_title = preprocess::LowerAsciiSingleLine(original_titles[j]);
@@ -272,6 +273,9 @@ namespace indexer {
       else
         ans += "max";
       ans.push_back(utility::kSeparator);
+
+      if (j == last_result)
+        return ans + "loadnomore";
 
       if (results_added >= 10)
         break;

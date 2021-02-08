@@ -23,6 +23,9 @@ function DisplayResponse(res) {
   if (tokens.length < 3)
     return
 
+  if (tokens.pop() != 'loadnomore')
+    $('#load_more_container').css('display', 'flex')
+
   $('#results_title').text(`Results for query "${current_query}":`)
 
   for (i = 0; i < tokens.length; i += 3) {
@@ -37,7 +40,7 @@ function DisplayResponse(res) {
       </div>
     </div>`))
   }
-  $('#load_more_container').css('display', 'flex')
+  
 
   if (current_page > 0) {
     window.scrollBy(0, 200)

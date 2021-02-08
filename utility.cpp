@@ -5,7 +5,8 @@ namespace utility {
   const char kSeparator{ 30 };
   const string kEmptyResult = (
     "Conjunto vazio" + string{ kSeparator } +
-    "-" + string{ kSeparator } + "0"
+    "-" + string{ kSeparator } + "0" +
+    string{ kSeparator } + "loadnomore"
   );
   const int kSnippetSize = 35;
 
