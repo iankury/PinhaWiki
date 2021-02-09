@@ -241,8 +241,8 @@ img {
 
   #general_info {
     font-size: 16px;
-    line-height: 1;
+    line-height: 20px;
     width: 90%;
-    bottom: 30%;
+    bottom: 28%;
   }
 }
