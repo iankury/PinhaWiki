@@ -11,7 +11,7 @@ PinhaWiki is a search engine whose universe of action is strictly within the bou
 You can use the engine directly (making queries of up to 50 chars) here: https://pinhata.wiki.br
 
 
-The project has a classic HTML-CSS-JS front-end, which communicates with a simple Node.js-Express.js backend, which in turn runs a C++ addon for the heavy computations. The heart of search is C++, which allows for efficient querying of the relatively large database, even within the constraints of the limited physical resources of a humble hosting plan.
+The project has a classic HTML/CSS/JS front-end, which communicates with a simple Node.js/Express.js back-end, which in turn runs a C++ addon for the heavy computations. The heart of search is C++, which allows for efficient querying of the relatively large database, even within the constraints of the limited physical resources of a humble hosting plan.
 
 If you want to build the whole project on your own computer:
 
