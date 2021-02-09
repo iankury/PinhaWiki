@@ -3,18 +3,27 @@ const WIKI_URL = 'https://pt.wikipedia.org/wiki/'
 let virgin = true, current_query, current_page = 0
 const encode = s => s.split('').map(x => x.charCodeAt(0)).join('a')
 
-$(document).ready(Load)
+$('#logo_img').on('click', () => location.reload())
 
-function Load() {
-  $.post('/open', Main)
-}
+$(document).ready(() => $.post('/open', Main))
 
 function Main() {
   $('#loading_gif').hide()
   $('#search_box').show()
   $('#search_box').focus()
+  $(window).on('resize', Resize)
   $('#search_box').on('keydown', Keydown)
   $('#btn_load_more').on('click', LoadMore)
+}
+
+function Resize() {
+  if (window.innerWidth < 768) {
+    const ratio = window.innerHeight / window.innerWidth
+    if (ratio < 1.618)
+      $('#general_info').hide()
+    else
+      $('#general_info').show()
+  }
 }
 
 function DisplayResponse(res) {
@@ -40,11 +49,9 @@ function DisplayResponse(res) {
       </div>
     </div>`))
   }
-  
 
-  if (current_page > 0) {
-    window.scrollBy(0, 200)
-  }
+  if (current_page > 0) 
+    window.scrollBy(0, 150)
 }
 
 function SendQuery() {
@@ -65,6 +72,7 @@ function Keydown(e) {
     if (virgin) {
       virgin = false
       document.querySelector('style').textContent += results_styling
+      $(window).off('resize')
     }
     SendQuery()
   }
